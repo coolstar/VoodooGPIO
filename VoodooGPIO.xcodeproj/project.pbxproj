@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		F10447AE1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F10447AC1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp */; };
 		F10447AF1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h in Headers */ = {isa = PBXBuildFile; fileRef = F10447AD1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h */; };
+		F142D11B1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F142D1191F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.cpp */; };
+		F142D11C1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.h in Headers */ = {isa = PBXBuildFile; fileRef = F142D11A1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.h */; };
 		F1F172C91F42263A00AD98FA /* VoodooGPIO.h in Headers */ = {isa = PBXBuildFile; fileRef = F1F172C81F42263A00AD98FA /* VoodooGPIO.h */; };
 		F1F172CB1F42263A00AD98FA /* VoodooGPIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1F172CA1F42263A00AD98FA /* VoodooGPIO.cpp */; };
 /* End PBXBuildFile section */
@@ -16,6 +18,8 @@
 /* Begin PBXFileReference section */
 		F10447AC1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooGPIOSunrisePointH.cpp; sourceTree = "<group>"; };
 		F10447AD1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooGPIOSunrisePointH.h; sourceTree = "<group>"; };
+		F142D1191F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooGPIOSunrisePointLP.cpp; sourceTree = "<group>"; };
+		F142D11A1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooGPIOSunrisePointLP.h; sourceTree = "<group>"; };
 		F17C4C481F42AC33009DB44C /* linuxirq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = linuxirq.h; sourceTree = "<group>"; };
 		F1F172C51F42263A00AD98FA /* VoodooGPIO.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooGPIO.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1F172C81F42263A00AD98FA /* VoodooGPIO.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooGPIO.h; sourceTree = "<group>"; };
@@ -43,6 +47,15 @@
 			name = "SunrisePoint-H";
 			sourceTree = "<group>";
 		};
+		F142D1181F42C244007AA5C6 /* SunrisePoint-LP */ = {
+			isa = PBXGroup;
+			children = (
+				F142D1191F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.cpp */,
+				F142D11A1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.h */,
+			);
+			name = "SunrisePoint-LP";
+			sourceTree = "<group>";
+		};
 		F1F172BB1F42263A00AD98FA = {
 			isa = PBXGroup;
 			children = (
@@ -62,6 +75,7 @@
 		F1F172C71F42263A00AD98FA /* VoodooGPIO */ = {
 			isa = PBXGroup;
 			children = (
+				F142D1181F42C244007AA5C6 /* SunrisePoint-LP */,
 				F10447AB1F4278AB00BA5A85 /* SunrisePoint-H */,
 				F1F172C81F42263A00AD98FA /* VoodooGPIO.h */,
 				F1F172CA1F42263A00AD98FA /* VoodooGPIO.cpp */,
@@ -80,6 +94,7 @@
 			files = (
 				F1F172C91F42263A00AD98FA /* VoodooGPIO.h in Headers */,
 				F10447AF1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h in Headers */,
+				F142D11C1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +167,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F10447AE1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp in Sources */,
+				F142D11B1F42C255007AA5C6 /* VoodooGPIOSunrisePointLP.cpp in Sources */,
 				F1F172CB1F42263A00AD98FA /* VoodooGPIO.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
