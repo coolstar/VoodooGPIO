@@ -7,13 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F1F172C91F42263A00AD98FA /* VoodooGPIO.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F1F172C81F42263A00AD98FA /* VoodooGPIO.hpp */; };
+		F10447AE1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F10447AC1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp */; };
+		F10447AF1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h in Headers */ = {isa = PBXBuildFile; fileRef = F10447AD1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h */; };
+		F1F172C91F42263A00AD98FA /* VoodooGPIO.h in Headers */ = {isa = PBXBuildFile; fileRef = F1F172C81F42263A00AD98FA /* VoodooGPIO.h */; };
 		F1F172CB1F42263A00AD98FA /* VoodooGPIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1F172CA1F42263A00AD98FA /* VoodooGPIO.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		F10447AC1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooGPIOSunrisePointH.cpp; sourceTree = "<group>"; };
+		F10447AD1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooGPIOSunrisePointH.h; sourceTree = "<group>"; };
+		F17C4C481F42AC33009DB44C /* linuxirq.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = linuxirq.h; sourceTree = "<group>"; };
 		F1F172C51F42263A00AD98FA /* VoodooGPIO.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooGPIO.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		F1F172C81F42263A00AD98FA /* VoodooGPIO.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VoodooGPIO.hpp; sourceTree = "<group>"; };
+		F1F172C81F42263A00AD98FA /* VoodooGPIO.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooGPIO.h; sourceTree = "<group>"; };
 		F1F172CA1F42263A00AD98FA /* VoodooGPIO.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooGPIO.cpp; sourceTree = "<group>"; };
 		F1F172CC1F42263A00AD98FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -29,6 +34,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F10447AB1F4278AB00BA5A85 /* SunrisePoint-H */ = {
+			isa = PBXGroup;
+			children = (
+				F10447AC1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp */,
+				F10447AD1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h */,
+			);
+			name = "SunrisePoint-H";
+			sourceTree = "<group>";
+		};
 		F1F172BB1F42263A00AD98FA = {
 			isa = PBXGroup;
 			children = (
@@ -48,9 +62,11 @@
 		F1F172C71F42263A00AD98FA /* VoodooGPIO */ = {
 			isa = PBXGroup;
 			children = (
-				F1F172C81F42263A00AD98FA /* VoodooGPIO.hpp */,
+				F10447AB1F4278AB00BA5A85 /* SunrisePoint-H */,
+				F1F172C81F42263A00AD98FA /* VoodooGPIO.h */,
 				F1F172CA1F42263A00AD98FA /* VoodooGPIO.cpp */,
 				F1F172CC1F42263A00AD98FA /* Info.plist */,
+				F17C4C481F42AC33009DB44C /* linuxirq.h */,
 			);
 			path = VoodooGPIO;
 			sourceTree = "<group>";
@@ -62,7 +78,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F1F172C91F42263A00AD98FA /* VoodooGPIO.hpp in Headers */,
+				F1F172C91F42263A00AD98FA /* VoodooGPIO.h in Headers */,
+				F10447AF1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10447AE1F4278CD00BA5A85 /* VoodooGPIOSunrisePointH.cpp in Sources */,
 				F1F172CB1F42263A00AD98FA /* VoodooGPIO.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -277,6 +295,7 @@
 				F1F172D11F42263A00AD98FA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
