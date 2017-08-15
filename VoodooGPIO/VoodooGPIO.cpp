@@ -339,6 +339,45 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community){
     return true;
 }
 
+IOInterruptEventSource *VoodooGPIO::interruptForPin(unsigned pin, unsigned type, OSObject *owner, IOInterruptEventSource::Action action){
+    struct intel_community *community = intel_get_community(pin);
+    if (!community)
+        return NULL;
+    
+    unsigned communityidx = pin - community->pin_base;
+    
+    if (community->pinInterruptSources[communityidx])
+        return NULL; //Interrupt already provided
+    
+    IOInterruptEventSource *pinInterruptSource = IOInterruptEventSource::interruptEventSource(owner, action);
+    pinInterruptSource->retain();
+    
+    intel_gpio_irq_set_type(pin, type);
+    intel_gpio_irq_enable(pin);
+    
+    community->pinInterruptSources[communityidx] = pinInterruptSource;
+    return pinInterruptSource;
+}
+
+bool VoodooGPIO::deregisterInterrupt(unsigned pin){
+    struct intel_community *community = intel_get_community(pin);
+    if (!community)
+        return false;
+    
+    unsigned communityidx = pin - community->pin_base;
+    if (community->pinInterruptSources[communityidx]){
+        IOInterruptEventSource *pinInterruptSource = community->pinInterruptSources[communityidx];
+        pinInterruptSource->disable();
+        pinInterruptSource->release();
+        
+        community->pinInterruptSources[communityidx] = NULL;
+        
+        intel_gpio_irq_mask_unmask(pin, true);
+        return true;
+    }
+    return false;
+}
+
 bool VoodooGPIO::start(IOService *provider){
     if (!npins || !ngroups || !nfunctions || !ncommunities){
         IOLog("%s::Missing Platform Data! Aborting!\n", getName());
@@ -408,9 +447,22 @@ bool VoodooGPIO::start(IOService *provider){
         }
     }
     
+    for (int i = 0; i < ncommunities; i++){
+        size_t sz = sizeof(IOInterruptEventSource *) * communities[i].npins;
+        communities[i].pinInterruptSources = (IOInterruptEventSource **)IOMalloc(sz);
+        memset(communities[i].pinInterruptSources, 0, sz);
+    }
+    
     //0x1B is ELAN0651 on Yoga 720
-    intel_gpio_irq_set_type(0x1B, IRQ_TYPE_LEVEL_LOW);
-    intel_gpio_irq_enable(0x1B);
+    //intel_gpio_irq_set_type(0x1B, IRQ_TYPE_LEVEL_LOW);
+    //intel_gpio_irq_enable(0x1B);
+    
+    demoInterruptSource = interruptForPin(0x1B, IRQ_TYPE_LEVEL_LOW, this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred));
+    if (demoInterruptSource){
+        workLoop->addEventSource(demoInterruptSource);
+        demoInterruptSource->enable();
+        IOLog("%s::Registered Touchpad Interrupt!\n", getName());
+    }
     
     registerService();
     
@@ -420,13 +472,31 @@ bool VoodooGPIO::start(IOService *provider){
 void VoodooGPIO::stop(IOService *provider){
     IOLog("%s::VoodooGPIO stop!\n", getName());
     
-    intel_gpio_irq_mask_unmask(0x1B, true);
+    //intel_gpio_irq_mask_unmask(0x1B, true);
+    
+    if (demoInterruptSource){
+        workLoop->removeEventSource(demoInterruptSource);
+        demoInterruptSource->disable();
+    }
+    
+    deregisterInterrupt(0x1B);
     
     for (int i = 0; i < ncommunities; i++){
         if (communities[i].gpps_alloc){
             IOFree((void *)communities[i].gpps, communities[i].ngpps * sizeof(struct intel_padgroup));
             communities[i].gpps = NULL;
         }
+        
+        for (int j = 0; j < communities[i].npins; j++){
+            IOInterruptEventSource *pinInterruptSource = communities[i].pinInterruptSources[j];
+            if (pinInterruptSource){
+                pinInterruptSource->disable();
+                pinInterruptSource->release();
+                pinInterruptSource = NULL;
+                communities[i].pinInterruptSources[j] = NULL;
+            }
+        }
+        IOFree(communities[i].pinInterruptSources, sizeof(IOInterruptEventSource *) * communities[i].npins);
     }
     
     if (interruptSource){
@@ -447,7 +517,7 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
     for (int gpp = 0; gpp < community->ngpps; gpp++){
         const struct intel_padgroup *padgrp = &community->gpps[gpp];
         
-        unsigned long pending, enabled, gpp_offset;
+        unsigned long pending, enabled;
         
         pending = readl(community->regs + GPI_IS + padgrp->reg_num * 4);
         enabled = readl(community->regs + community->ie_offset +
@@ -464,16 +534,23 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
             bool isPin = (pending >> i) & 0x1;
             if (isPin){
                 unsigned pin = padno + i;
-                IOLog("%s::Interrupt on pin %u\n", getName(), pin);
+                
+                IOInterruptEventSource *pinInterruptSource = community->pinInterruptSources[pin - community->pin_base];
+                if (pinInterruptSource){
+                    pinInterruptSource->interruptOccurred(NULL, NULL, pin);
+                }
             }
         }
     }
 }
 
 void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
-    //IOLog("%s::VoodooGPIO got an interrupt!\n", getName());
     for (int i = 0; i < ncommunities; i++){
         struct intel_community *community = &communities[i];
         intel_gpio_community_irq_handler(community);
     }
+}
+
+void VoodooGPIO::TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
+    IOLog("%s::Got Demo Touchpad Interrupt!\n", getName());
 }

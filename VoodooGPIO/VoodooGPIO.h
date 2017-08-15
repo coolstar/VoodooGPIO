@@ -121,6 +121,8 @@ struct intel_community {
     IOMemoryMap *mmap;
     IOVirtualAddress regs;
     IOVirtualAddress pad_regs;
+    
+    IOInterruptEventSource **pinInterruptSources;
 };
 
 /* Additional features supported by the hardware */
@@ -170,6 +172,7 @@ protected:
 public:
     IOWorkLoop *workLoop;
     IOInterruptEventSource *interruptSource;
+    IOInterruptEventSource *demoInterruptSource;
     
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
@@ -188,12 +191,17 @@ public:
     
     bool intel_pinctrl_add_padgroups(intel_community *community);
     
+    IOInterruptEventSource *interruptForPin(unsigned pin, unsigned type, OSObject *owner, IOInterruptEventSource::Action action);
+    bool deregisterInterrupt(unsigned pin);
+    
     virtual bool start(IOService *provider) override;
     virtual void stop(IOService *provider) override;
     
     void intel_gpio_community_irq_handler(struct intel_community *community);
     
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    
+    void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
 };
 
 #endif /* VoodooGPIO_h */
