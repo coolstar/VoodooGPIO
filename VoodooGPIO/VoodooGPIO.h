@@ -123,8 +123,9 @@ struct intel_community {
     IOVirtualAddress pad_regs;
     
     unsigned *interruptTypes;
-    OSObject **pinInterruptSourceOwners;
-    IOInterruptEventSource **pinInterruptSources;
+    OSObject **pinInterruptActionOwners;
+    IOInterruptAction *pinInterruptAction;
+    void **pinInterruptRefcons;
 };
 
 struct intel_pad_context {
@@ -222,12 +223,17 @@ private:
     
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     
-    //void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     
 public:
+    virtual IOReturn getInterruptType(int pin, int *interruptType) override;
+    virtual IOReturn registerInterrupt(int pin, OSObject *target, IOInterruptAction handler, void *refcon) override;
+    virtual IOReturn unregisterInterrupt(int pin) override;
     
-    IOInterruptEventSource *interruptForPin(unsigned pin, unsigned type, OSObject *owner, IOInterruptEventSource::Action action);
-    bool deregisterInterrupt(unsigned pin);
+    virtual IOReturn enableInterrupt(int pin) override;
+    virtual IOReturn disableInterrupt(int pin) override;
+    
+    IOReturn setInterruptTypeForPin(int pin, int type);
     
     virtual bool start(IOService *provider) override;
     virtual void stop(IOService *provider) override;
