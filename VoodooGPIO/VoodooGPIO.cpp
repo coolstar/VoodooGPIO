@@ -585,12 +585,12 @@ bool VoodooGPIO::start(IOService *provider){
     //demoInterruptSource = interruptForPin(0x1B, IRQ_TYPE_LEVEL_LOW, this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred));
     
     /*setInterruptTypeForPin(0x1B, IRQ_TYPE_LEVEL_LOW);
-    demoInterruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred), this, 0x1B);
-    if (demoInterruptSource){
-        workLoop->addEventSource(demoInterruptSource);
-        demoInterruptSource->enable();
-        IOLog("%s::Registered Touchpad Interrupt!\n", getName());
-    }*/
+     demoInterruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred), this, 0x1B);
+     if (demoInterruptSource){
+     workLoop->addEventSource(demoInterruptSource);
+     demoInterruptSource->enable();
+     IOLog("%s::Registered Touchpad Interrupt!\n", getName());
+     }*/
     
     registerService();
     
@@ -725,10 +725,12 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
             if (isPin){
                 unsigned pin = padno + i;
                 
-                OSObject *owner = community->pinInterruptActionOwners[pin - community->pin_base];
-                IOInterruptAction handler = community->pinInterruptAction[pin - community->pin_base];
-                void *refcon = community->pinInterruptRefcons[pin - community->pin_base];
-                handler(owner, refcon, this, pin);
+                OSObject *owner = community->pinInterruptActionOwners[pin];
+                if (owner){
+                    IOInterruptAction handler = community->pinInterruptAction[pin];
+                    void *refcon = community->pinInterruptRefcons[pin];
+                    handler(owner, refcon, this, pin);
+                }
             }
         }
     }
