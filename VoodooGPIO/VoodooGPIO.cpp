@@ -497,7 +497,7 @@ IOInterruptEventSource *VoodooGPIO::interruptForPin(unsigned pin, unsigned type,
     
     if (community->pinInterruptSources[communityidx])
         return NULL; //Interrupt already provided
-    
+
     IOInterruptEventSource *pinInterruptSource = IOInterruptEventSource::interruptEventSource(owner, action);
     pinInterruptSource->retain();
     
@@ -505,6 +505,8 @@ IOInterruptEventSource *VoodooGPIO::interruptForPin(unsigned pin, unsigned type,
     intel_gpio_irq_enable(pin);
     
     community->pinInterruptSources[communityidx] = pinInterruptSource;
+    community->pinInterruptSourceOwners[communityidx] = owner;
+    community->interruptTypes[communityidx] = type;
     return pinInterruptSource;
 }
 
@@ -520,6 +522,8 @@ bool VoodooGPIO::deregisterInterrupt(unsigned pin){
         pinInterruptSource->release();
         
         community->pinInterruptSources[communityidx] = NULL;
+        community->pinInterruptSourceOwners[communityidx] = NULL;
+        community->interruptTypes[communityidx] = 0;
         
         intel_gpio_irq_mask_unmask(pin, true);
         return true;
@@ -535,6 +539,8 @@ bool VoodooGPIO::start(IOService *provider){
     
     if (!IOService::start(provider))
         return false;
+    
+    PMinit();
     
     workLoop = getWorkLoop();
     if (!workLoop){
@@ -600,6 +606,14 @@ bool VoodooGPIO::start(IOService *provider){
         size_t sz = sizeof(IOInterruptEventSource *) * communities[i].npins;
         communities[i].pinInterruptSources = (IOInterruptEventSource **)IOMalloc(sz);
         memset(communities[i].pinInterruptSources, 0, sz);
+        
+        sz = sizeof(OSObject *) * communities[i].npins;
+        communities[i].pinInterruptSourceOwners = (OSObject **)IOMalloc(sz);
+        memset(communities[i].pinInterruptSourceOwners, 0, sz);
+        
+        sz = sizeof(unsigned) * communities[i].npins;
+        communities[i].interruptTypes = (unsigned *)IOMalloc(sz);
+        memset(communities[i].interruptTypes, 0, sz);
     }
     
     intel_pinctrl_pm_init();
@@ -634,8 +648,6 @@ bool VoodooGPIO::start(IOService *provider){
     myPowerStates[1].outputPowerCharacter = kIOPMPowerOn;
     myPowerStates[1].inputPowerRequirement = kIOPMPowerOn;
     
-    
-    
     provider->joinPMtree(this);
     
     registerPowerDriver(this, myPowerStates, kMyNumberOfStates);
@@ -645,8 +657,6 @@ bool VoodooGPIO::start(IOService *provider){
 
 void VoodooGPIO::stop(IOService *provider){
     IOLog("%s::VoodooGPIO stop!\n", getName());
-    
-    //intel_gpio_irq_mask_unmask(0x1B, true);
     
     if (demoInterruptSource){
         workLoop->removeEventSource(demoInterruptSource);
@@ -671,8 +681,14 @@ void VoodooGPIO::stop(IOService *provider){
                 pinInterruptSource = NULL;
                 communities[i].pinInterruptSources[j] = NULL;
             }
+            
+            communities[i].pinInterruptSourceOwners[j] = NULL;
+            communities[i].interruptTypes[j] = 0;
         }
         IOFree(communities[i].pinInterruptSources, sizeof(IOInterruptEventSource *) * communities[i].npins);
+        IOFree(communities[i].pinInterruptSourceOwners, sizeof(OSObject *) * communities[i].npins);
+        IOFree(communities[i].interruptTypes, sizeof(unsigned) * communities[i].npins);
+
     }
     
     if (interruptSource){
@@ -701,6 +717,19 @@ IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevi
         if (!controllerIsAwake){
             controllerIsAwake = true;
             intel_pinctrl_resume();
+            
+            for (int i = 0; i < ncommunities; i++){
+                struct intel_community *community = &communities[i];
+                for (int j = 0; j < community->npins; j++){
+                    IOInterruptEventSource *pinInterruptSource = community->pinInterruptSources[j];
+                    if (pinInterruptSource){
+                        int pin = community->pin_base + j;
+                        intel_gpio_irq_mask_unmask(pin, true);
+                        intel_gpio_irq_set_type(pin, community->interruptTypes[j]);
+                        intel_gpio_irq_enable(pin);
+                    }
+                }
+            }
             
             IOLog("%s::Woke up from Sleep!\n", getName());
         } else {
@@ -732,9 +761,17 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
             if (isPin){
                 unsigned pin = padno + i;
                 
+                OSObject *owner = community->pinInterruptSourceOwners[pin - community->pin_base];
                 IOInterruptEventSource *pinInterruptSource = community->pinInterruptSources[pin - community->pin_base];
                 if (pinInterruptSource){
-                    pinInterruptSource->interruptOccurred(NULL, NULL, pin);
+                    //pinInterruptSource->interruptOccurred(NULL, this, pin); //HACK: This method is preferred but it fails to work in RELEASE mode for some reason.
+                    
+                    if (!pinInterruptSource->getAction()){
+                        IOLog("%s::No Action on interrupt!\n", getName());
+                    } else {
+                        IOInterruptEventAction action = (IOInterruptEventAction)pinInterruptSource->getAction();
+                        action(owner, pinInterruptSource, 1);
+                    }
                 }
             }
         }

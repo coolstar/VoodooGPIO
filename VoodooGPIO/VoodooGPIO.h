@@ -122,6 +122,8 @@ struct intel_community {
     IOVirtualAddress regs;
     IOVirtualAddress pad_regs;
     
+    unsigned *interruptTypes;
+    OSObject **pinInterruptSourceOwners;
     IOInterruptEventSource **pinInterruptSources;
 };
 
