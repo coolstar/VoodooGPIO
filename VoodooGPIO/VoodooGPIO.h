@@ -125,6 +125,21 @@ struct intel_community {
     IOInterruptEventSource **pinInterruptSources;
 };
 
+struct intel_pad_context {
+    uint32_t padcfg0;
+    uint32_t padcfg1;
+    uint32_t padcfg2;
+};
+
+struct intel_community_context {
+    uint32_t *intmask;
+};
+
+struct intel_pinctrl_context {
+    struct intel_pad_context *pads;
+    struct intel_community_context *communities;
+};
+
 /* Additional features supported by the hardware */
 #define PINCTRL_FEATURE_DEBOUNCE	1
 #define PINCTRL_FEATURE_1K_PD		2
@@ -169,6 +184,9 @@ protected:
     struct intel_community *communities;
     size_t ncommunities;
     
+    struct intel_pinctrl_context context;
+    
+    bool controllerIsAwake;
 public:
     IOWorkLoop *workLoop;
     IOInterruptEventSource *interruptSource;
@@ -191,11 +209,20 @@ public:
     
     bool intel_pinctrl_add_padgroups(intel_community *community);
     
+    bool intel_pinctrl_should_save(unsigned pin);
+    void intel_pinctrl_pm_init();
+    void intel_pinctrl_pm_release();
+    void intel_pinctrl_suspend();
+    void intel_gpio_irq_init();
+    void intel_pinctrl_resume();
+    
     IOInterruptEventSource *interruptForPin(unsigned pin, unsigned type, OSObject *owner, IOInterruptEventSource::Action action);
     bool deregisterInterrupt(unsigned pin);
     
     virtual bool start(IOService *provider) override;
     virtual void stop(IOService *provider) override;
+    
+    IOReturn setPowerState(unsigned long powerState, IOService *whatDevice);
     
     void intel_gpio_community_irq_handler(struct intel_community *community);
     
