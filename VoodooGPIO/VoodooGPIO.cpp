@@ -621,12 +621,12 @@ bool VoodooGPIO::start(IOService *provider){
     controllerIsAwake = true;
     
     //0x1B is ELAN0651 on Yoga 720
-    demoInterruptSource = interruptForPin(0x1B, IRQ_TYPE_LEVEL_LOW, this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred));
+    /*demoInterruptSource = interruptForPin(0x1B, IRQ_TYPE_LEVEL_LOW, this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred));
     if (demoInterruptSource){
         workLoop->addEventSource(demoInterruptSource);
         demoInterruptSource->enable();
         IOLog("%s::Registered Touchpad Interrupt!\n", getName());
-    }
+    }*/
     
     registerService();
     
@@ -658,12 +658,12 @@ bool VoodooGPIO::start(IOService *provider){
 void VoodooGPIO::stop(IOService *provider){
     IOLog("%s::VoodooGPIO stop!\n", getName());
     
-    if (demoInterruptSource){
+    /*if (demoInterruptSource){
         workLoop->removeEventSource(demoInterruptSource);
         demoInterruptSource->disable();
     }
     
-    deregisterInterrupt(0x1B);
+    deregisterInterrupt(0x1B);*/
     
     intel_pinctrl_pm_release();
     
@@ -785,6 +785,6 @@ void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src,
     }
 }
 
-void VoodooGPIO::TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
+/*void VoodooGPIO::TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
     IOLog("%s::Got Demo Touchpad Interrupt!\n", getName());
-}
+}*/

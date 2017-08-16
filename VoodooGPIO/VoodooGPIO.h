@@ -185,14 +185,14 @@ protected:
     size_t nfunctions;
     struct intel_community *communities;
     size_t ncommunities;
-    
+private:
     struct intel_pinctrl_context context;
     
     bool controllerIsAwake;
-public:
+    
     IOWorkLoop *workLoop;
     IOInterruptEventSource *interruptSource;
-    IOInterruptEventSource *demoInterruptSource;
+    //IOInterruptEventSource *demoInterruptSource;
     
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
@@ -218,19 +218,21 @@ public:
     void intel_gpio_irq_init();
     void intel_pinctrl_resume();
     
+    void intel_gpio_community_irq_handler(struct intel_community *community);
+    
+    void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    
+    //void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    
+public:
+    
     IOInterruptEventSource *interruptForPin(unsigned pin, unsigned type, OSObject *owner, IOInterruptEventSource::Action action);
     bool deregisterInterrupt(unsigned pin);
     
     virtual bool start(IOService *provider) override;
     virtual void stop(IOService *provider) override;
     
-    IOReturn setPowerState(unsigned long powerState, IOService *whatDevice);
-    
-    void intel_gpio_community_irq_handler(struct intel_community *community);
-    
-    void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
-    
-    void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    virtual IOReturn setPowerState(unsigned long powerState, IOService *whatDevice) override;
 };
 
 #endif /* VoodooGPIO_h */
