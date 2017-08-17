@@ -94,7 +94,7 @@ struct intel_community *VoodooGPIO::intel_get_community(unsigned pin){
 const struct intel_padgroup *VoodooGPIO::intel_community_get_padgroup(const struct intel_community *community, unsigned pin){
     for (int i = 0; i < community->ngpps; i++){
         const struct intel_padgroup *padgrp = &community->gpps[i];
-        if (pin > padgrp->base && pin < padgrp->base + padgrp->size)
+        if (pin >= padgrp->base && pin < padgrp->base + padgrp->size)
             return padgrp;
     }
     
