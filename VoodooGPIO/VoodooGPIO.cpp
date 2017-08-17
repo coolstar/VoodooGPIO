@@ -731,6 +731,10 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
                     void *refcon = community->pinInterruptRefcons[pin];
                     handler(owner, refcon, this, pin);
                 }
+                
+                unsigned communityidx = pin - community->pin_base;
+                if (community->interruptTypes[communityidx] & IRQ_TYPE_LEVEL_MASK)
+                    intel_gpio_irq_enable(pin); //For Level interrupts, we need to clear the interrupt status or we get too many interrupts
             }
         }
     }
@@ -740,16 +744,8 @@ IOReturn VoodooGPIO::getInterruptType(int pin, int *interruptType){
     struct intel_community *community = intel_get_community(pin);
     if (!community)
         return kIOReturnNoInterrupt;
-    
-    /*unsigned communityidx = pin - community->pin_base;
-    if (community->interruptTypes[communityidx] & IRQ_TYPE_LEVEL_MASK)
-        *interruptType = kIOInterruptTypeLevel;
-    else if (community->interruptTypes[communityidx] & IRQ_TYPE_EDGE_BOTH)
-        *interruptType = kIOInterruptTypeEdge;
-    else
-        return kIOReturnNoInterrupt;*/
-    
-    //XXX: Need to Lie to macOS that the interrupt is Edge or it keeps disabling and re-enabling it.
+
+    //XXX: Need to Lie to macOS that the interrupt is Edge or it keeps disabling and re-enabling it (which we do ourselves)
     *interruptType = kIOInterruptTypeEdge;
     return kIOReturnSuccess;
 }
