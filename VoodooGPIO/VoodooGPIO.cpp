@@ -732,9 +732,8 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
                     handler(owner, refcon, this, pin);
                 }
                 
-                unsigned communityidx = pin - community->pin_base;
-                if (community->interruptTypes[communityidx] & IRQ_TYPE_LEVEL_MASK)
-                    intel_gpio_irq_enable(pin); //For Level interrupts, we need to clear the interrupt status or we get too many interrupts
+                if (community->interruptTypes[pin] & IRQ_TYPE_LEVEL_MASK)
+                    intel_gpio_irq_enable(community->pin_base + pin); //For Level interrupts, we need to clear the interrupt status or we get too many interrupts
             }
         }
     }
