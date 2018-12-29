@@ -79,6 +79,26 @@ void VoodooGPIO::writel(UInt32 b, IOVirtualAddress addr){
     *(volatile UInt32 *)(addr) = b;
 }
 
+IOWorkLoop* VoodooGPIO::getWorkLoop() {
+    // Do we have a work loop already?, if so return it NOW.
+    if ((vm_address_t) workLoop >> 1)
+        return workLoop;
+    
+    if (OSCompareAndSwap(0, 1, reinterpret_cast<IOWorkLoop*>(&workLoop))) {
+        // Construct the workloop and set the cntrlSync variable
+        // to whatever the result is and return
+        workLoop = IOWorkLoop::workLoop();
+    } else {
+        while (reinterpret_cast<IOWorkLoop*>(workLoop) == reinterpret_cast<IOWorkLoop*>(1)) {
+            // Spin around the cntrlSync variable until the
+            // initialization finishes.
+            thread_block(0);
+        }
+    }
+    
+    return workLoop;
+}
+
 struct intel_community *VoodooGPIO::intel_get_community(unsigned pin){
     struct intel_community *community;
     for (int i = 0; i < ncommunities; i++){
