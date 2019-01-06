@@ -5,7 +5,7 @@
 //  Created by Alexandre Daoud on 15/11/18.
 //
 
-#include "VoodooGPIO.h"
+#include "../VoodooGPIO.h"
 
 #ifndef VoodooGPIOCannonLakeH_h
 #define VoodooGPIOCannonLakeH_h

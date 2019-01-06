@@ -193,6 +193,7 @@ private:
     
     IOWorkLoop *workLoop;
     IOInterruptEventSource *interruptSource;
+    IOCommandGate* command_gate;
     //IOInterruptEventSource *demoInterruptSource;
     
     UInt32 readl(IOVirtualAddress addr);
@@ -222,8 +223,9 @@ private:
     void intel_pinctrl_resume();
     
     void intel_gpio_community_irq_handler(struct intel_community *community);
-    
+
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
+    void interruptOccurredGated();
     
     void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     

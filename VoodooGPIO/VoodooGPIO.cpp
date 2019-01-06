@@ -535,9 +535,15 @@ bool VoodooGPIO::start(IOService *provider){
     }
     
     workLoop->addEventSource(interruptSource);
-    
     interruptSource->enable();
     
+    command_gate = IOCommandGate::commandGate(this);
+    if (!command_gate || (workLoop->addEventSource(command_gate) != kIOReturnSuccess)) {
+        IOLog("%s Could not open command gate\n", getName());
+        stop(provider);
+        return false;
+    }
+
     IOLog("%s::VoodooGPIO Init!\n", getName());
     
     for (int i = 0; i < ncommunities; i++){
@@ -834,11 +840,13 @@ IOReturn VoodooGPIO::setInterruptTypeForPin(int pin, int type){
 }
 
 void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
+    command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooGPIO::interruptOccurredGated));
+}
+void VoodooGPIO::interruptOccurredGated() {
     for (int i = 0; i < ncommunities; i++){
         struct intel_community *community = &communities[i];
         intel_gpio_community_irq_handler(community);
     }
-    
 }
 
 /*void VoodooGPIO::TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
