@@ -10,7 +10,7 @@
 
 OSDefineMetaClassAndStructors(VoodooGPIOSunrisePointH, VoodooGPIO);
 
-bool VoodooGPIOSunrisePointH::start(IOService *provider){
+bool VoodooGPIOSunrisePointH::start(IOService *provider) {
     this->pins = spth_pins;
     this->npins = ARRAY_SIZE(spth_pins);
     this->groups = spth_groups;
@@ -19,8 +19,8 @@ bool VoodooGPIOSunrisePointH::start(IOService *provider){
     this->nfunctions = ARRAY_SIZE(spth_functions);
     this->communities = spth_communities;
     this->ncommunities = ARRAY_SIZE(spth_communities);
-    
+
     IOLog("%s::Loading GPIO Data for SunrisePoint-H\n", getName());
-    
+
     return VoodooGPIO::start(provider);
 }

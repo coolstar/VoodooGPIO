@@ -3,6 +3,7 @@
 //  VoodooGPIO
 //
 //  Created by Alexandre Daoud on 15/11/18.
+//  Copyright © 2018 Alexandre Daoud. All rights reserved.
 //
 
 #include "../VoodooGPIO.h"
@@ -448,8 +449,8 @@ static struct intel_community cnlh_communities[] = {
 
 class VoodooGPIOCannonLakeH : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOCannonLakeH);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOCannonLakeH_h */

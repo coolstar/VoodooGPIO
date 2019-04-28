@@ -11,22 +11,22 @@
 #ifndef VoodooGPIOSunrisePointLP_h
 #define VoodooGPIOSunrisePointLP_h
 
-#define SPT_PAD_OWN	0x020
-#define SPT_PADCFGLOCK	0x0a0
-#define SPT_HOSTSW_OWN	0x0d0
-#define SPT_GPI_IE	0x120
+#define SPT_PAD_OWN     0x020
+#define SPT_PADCFGLOCK  0x0a0
+#define SPT_HOSTSW_OWN  0x0d0
+#define SPT_GPI_IE      0x120
 
-#define SPT_COMMUNITY(b, s, e)				\
-{						\
-.barno = (b),				\
-.padown_offset = SPT_PAD_OWN,		\
-.padcfglock_offset = SPT_PADCFGLOCK,	\
-.hostown_offset = SPT_HOSTSW_OWN,	\
-.ie_offset = SPT_GPI_IE,		\
-.gpp_size = 24,				\
-.gpp_num_padown_regs = 4,		\
-.pin_base = (s),			\
-.npins = ((e) - (s) + 1),		\
+#define SPT_COMMUNITY(b, s, e)              \
+{                                           \
+    .barno = (b),                           \
+    .padown_offset = SPT_PAD_OWN,           \
+    .padcfglock_offset = SPT_PADCFGLOCK,    \
+    .hostown_offset = SPT_HOSTSW_OWN,       \
+    .ie_offset = SPT_GPI_IE,                \
+    .gpp_size = 24,                         \
+    .gpp_num_padown_regs = 4,               \
+    .pin_base = (s),                        \
+    .npins = ((e) - (s) + 1),               \
 }
 
 static struct pinctrl_pin_desc sptlp_pins[] = {
@@ -269,8 +269,8 @@ static struct intel_community sptlp_communities[] = {
 
 class VoodooGPIOSunrisePointLP : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOSunrisePointLP);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOSunrisePointLP_h */

@@ -1,8 +1,16 @@
+//
+//  VoodooGPIO.cpp
+//  VoodooGPIO
+//
+//  Created by CoolStar on 8/14/17.
+//  Copyright © 2017 CoolStar. All rights reserved.
+//
+
 #include "VoodooGPIO.h"
 
 OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
 
-#define kIOPMPowerOff		0
+#define kIOPMPowerOff 0
 
 #if defined(__LP64__) && __LP64__
 #define BITS_PER_LONG 64
@@ -14,68 +22,66 @@ OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
 #define GENMASK(h, l) \
 (((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
 
-#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
 
 /* Offset from regs */
-#define REVID				0x000
-#define REVID_SHIFT			16
-#define REVID_MASK			GENMASK(31, 16)
+#define REVID               0x000
+#define REVID_SHIFT         16
+#define REVID_MASK          GENMASK(31, 16)
 
-#define PADBAR				0x00c
-#define GPI_IS				0x100
-#define GPI_GPE_STS			0x140
-#define GPI_GPE_EN			0x160
+#define PADBAR              0x00c
+#define GPI_IS              0x100
 
-#define PADOWN_BITS			4
-#define PADOWN_SHIFT(p)			((p) % 8 * PADOWN_BITS)
-#define PADOWN_MASK(p)			(0xf << PADOWN_SHIFT(p))
-#define PADOWN_GPP(p)			((p) / 8)
+#define PADOWN_BITS         4
+#define PADOWN_SHIFT(p)     ((p) % 8 * PADOWN_BITS)
+#define PADOWN_MASK(p)      (0xf << PADOWN_SHIFT(p))
+#define PADOWN_GPP(p)       ((p) / 8)
 
 /* Offset from pad_regs */
-#define PADCFG0				0x000
-#define PADCFG0_RXEVCFG_SHIFT		25
-#define PADCFG0_RXEVCFG_MASK		(3 << PADCFG0_RXEVCFG_SHIFT)
-#define PADCFG0_RXEVCFG_LEVEL		0
-#define PADCFG0_RXEVCFG_EDGE		1
-#define PADCFG0_RXEVCFG_DISABLED	2
-#define PADCFG0_RXEVCFG_EDGE_BOTH	3
-#define PADCFG0_PREGFRXSEL		BIT(24)
-#define PADCFG0_RXINV			BIT(23)
-#define PADCFG0_GPIROUTIOXAPIC		BIT(20)
-#define PADCFG0_GPIROUTSCI		BIT(19)
-#define PADCFG0_GPIROUTSMI		BIT(18)
-#define PADCFG0_GPIROUTNMI		BIT(17)
-#define PADCFG0_PMODE_SHIFT		10
-#define PADCFG0_PMODE_MASK		(0xf << PADCFG0_PMODE_SHIFT)
-#define PADCFG0_GPIORXDIS		BIT(9)
-#define PADCFG0_GPIOTXDIS		BIT(8)
-#define PADCFG0_GPIORXSTATE		BIT(1)
-#define PADCFG0_GPIOTXSTATE		BIT(0)
+#define PADCFG0                     0x000
+#define PADCFG0_RXEVCFG_SHIFT       25
+#define PADCFG0_RXEVCFG_MASK        (3 << PADCFG0_RXEVCFG_SHIFT)
+#define PADCFG0_RXEVCFG_LEVEL       0
+#define PADCFG0_RXEVCFG_EDGE        1
+#define PADCFG0_RXEVCFG_DISABLED    2
+#define PADCFG0_RXEVCFG_EDGE_BOTH   3
+#define PADCFG0_PREGFRXSEL          BIT(24)
+#define PADCFG0_RXINV               BIT(23)
+#define PADCFG0_GPIROUTIOXAPIC      BIT(20)
+#define PADCFG0_GPIROUTSCI          BIT(19)
+#define PADCFG0_GPIROUTSMI          BIT(18)
+#define PADCFG0_GPIROUTNMI          BIT(17)
+#define PADCFG0_PMODE_SHIFT         10
+#define PADCFG0_PMODE_MASK          (0xf << PADCFG0_PMODE_SHIFT)
+#define PADCFG0_GPIORXDIS           BIT(9)
+#define PADCFG0_GPIOTXDIS           BIT(8)
+#define PADCFG0_GPIORXSTATE         BIT(1)
+#define PADCFG0_GPIOTXSTATE         BIT(0)
 
-#define PADCFG1				0x004
-#define PADCFG1_TERM_UP			BIT(13)
-#define PADCFG1_TERM_SHIFT		10
-#define PADCFG1_TERM_MASK		(7 << PADCFG1_TERM_SHIFT)
-#define PADCFG1_TERM_20K		4
-#define PADCFG1_TERM_2K			3
-#define PADCFG1_TERM_5K			2
-#define PADCFG1_TERM_1K			1
+#define PADCFG1                     0x004
+#define PADCFG1_TERM_UP             BIT(13)
+#define PADCFG1_TERM_SHIFT          10
+#define PADCFG1_TERM_MASK           (7 << PADCFG1_TERM_SHIFT)
+#define PADCFG1_TERM_20K            4
+#define PADCFG1_TERM_2K             3
+#define PADCFG1_TERM_5K             2
+#define PADCFG1_TERM_1K             1
 
-#define PADCFG2				0x008
-#define PADCFG2_DEBEN			BIT(0)
-#define PADCFG2_DEBOUNCE_SHIFT		1
-#define PADCFG2_DEBOUNCE_MASK		GENMASK(4, 1)
+#define PADCFG2                     0x008
+#define PADCFG2_DEBEN               BIT(0)
+#define PADCFG2_DEBOUNCE_SHIFT      1
+#define PADCFG2_DEBOUNCE_MASK       GENMASK(4, 1)
 
-#define DEBOUNCE_PERIOD			31250 /* ns */
+#define DEBOUNCE_PERIOD             31250 /* ns */
 
-#define pin_to_padno(c, p)	((p) - (c)->pin_base)
-#define padgroup_offset(g, p)	((p) - (g)->base)
+#define pin_to_padno(c, p)      ((p) - (c)->pin_base)
+#define padgroup_offset(g, p)   ((p) - (g)->base)
 
 UInt32 VoodooGPIO::readl(IOVirtualAddress addr) {
     return *(const volatile UInt32 *)addr;
 }
 
-void VoodooGPIO::writel(UInt32 b, IOVirtualAddress addr){
+void VoodooGPIO::writel(UInt32 b, IOVirtualAddress addr) {
     *(volatile UInt32 *)(addr) = b;
 }
 
@@ -83,7 +89,7 @@ IOWorkLoop* VoodooGPIO::getWorkLoop() {
     // Do we have a work loop already?, if so return it NOW.
     if ((vm_address_t) workLoop >> 1)
         return workLoop;
-    
+
     if (OSCompareAndSwap(0, 1, reinterpret_cast<IOWorkLoop*>(&workLoop))) {
         // Construct the workloop and set the cntrlSync variable
         // to whatever the result is and return
@@ -95,34 +101,34 @@ IOWorkLoop* VoodooGPIO::getWorkLoop() {
             thread_block(0);
         }
     }
-    
+
     return workLoop;
 }
 
-struct intel_community *VoodooGPIO::intel_get_community(unsigned pin){
+struct intel_community *VoodooGPIO::intel_get_community(unsigned pin) {
     struct intel_community *community;
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         community = &communities[i];
         if (pin >= community->pin_base && pin < community->pin_base + community->npins)
             return community;
     }
-    
+
     IOLog("%s::Failed to find community for pin %u", getName(), pin);
     return NULL;
 }
 
-const struct intel_padgroup *VoodooGPIO::intel_community_get_padgroup(const struct intel_community *community, unsigned pin){
-    for (int i = 0; i < community->ngpps; i++){
+const struct intel_padgroup *VoodooGPIO::intel_community_get_padgroup(const struct intel_community *community, unsigned pin) {
+    for (int i = 0; i < community->ngpps; i++) {
         const struct intel_padgroup *padgrp = &community->gpps[i];
         if (pin >= padgrp->base && pin < padgrp->base + padgrp->size)
             return padgrp;
     }
-    
+
     IOLog("%s::Failed to find padgroup for pin %u", getName(), pin);
     return NULL;
 }
 
-IOVirtualAddress VoodooGPIO::intel_get_padcfg(unsigned pin, unsigned reg){
+IOVirtualAddress VoodooGPIO::intel_get_padcfg(unsigned pin, unsigned reg) {
     const struct intel_community *community;
     unsigned padno;
     size_t nregs;
@@ -140,7 +146,7 @@ IOVirtualAddress VoodooGPIO::intel_get_padcfg(unsigned pin, unsigned reg){
     return community->pad_regs + reg + padno * nregs * 4;
 }
 
-bool VoodooGPIO::intel_pad_owned_by_host(unsigned pin){
+bool VoodooGPIO::intel_pad_owned_by_host(unsigned pin) {
     const struct intel_community *community;
     const struct intel_padgroup *padgrp;
     unsigned gpp, offset, gpp_offset;
@@ -165,7 +171,7 @@ bool VoodooGPIO::intel_pad_owned_by_host(unsigned pin){
     return !(readl(padown) & PADOWN_MASK(gpp_offset));
 }
 
-bool VoodooGPIO::intel_pad_acpi_mode(unsigned pin){
+bool VoodooGPIO::intel_pad_acpi_mode(unsigned pin) {
     const struct intel_community *community;
     const struct intel_padgroup *padgrp;
     unsigned offset, gpp_offset;
@@ -188,7 +194,7 @@ bool VoodooGPIO::intel_pad_acpi_mode(unsigned pin){
     return !(readl(hostown) & BIT(gpp_offset));
 }
 
-bool VoodooGPIO::intel_pad_locked(unsigned pin){
+bool VoodooGPIO::intel_pad_locked(unsigned pin) {
     const struct intel_community *community;
     const struct intel_padgroup *padgrp;
     unsigned offset, gpp_offset;
@@ -266,7 +272,7 @@ SInt32 VoodooGPIO::intel_gpio_to_pin(UInt32 offset,
 /**
  * @param pin Hardware GPIO pin number to enable.
  */
-void VoodooGPIO::intel_gpio_irq_enable(UInt32 pin){
+void VoodooGPIO::intel_gpio_irq_enable(UInt32 pin) {
     const struct intel_community *community = intel_get_community(pin);
     if (community) {
         const struct intel_padgroup *padgrp = intel_community_get_padgroup(community, pin);
@@ -291,8 +297,7 @@ void VoodooGPIO::intel_gpio_irq_enable(UInt32 pin){
  * @param pin Hardware GPIO pin number to mask.
  * @param mask Whether to mask or unmask.
  */
-void VoodooGPIO::intel_gpio_irq_mask_unmask(unsigned pin, bool mask)
-{
+void VoodooGPIO::intel_gpio_irq_mask_unmask(unsigned pin, bool mask) {
     const struct intel_community *community = intel_get_community(pin);
     if (community) {
         const struct intel_padgroup *padgrp = intel_community_get_padgroup(community, pin);
@@ -361,7 +366,7 @@ bool VoodooGPIO::intel_gpio_irq_set_type(unsigned pin, unsigned type) {
     return true;
 }
 
-bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community){
+bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community) {
     struct intel_padgroup *gpps;
     unsigned padown_num = 0;
     size_t ngpps;
@@ -373,8 +378,8 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community){
     
     gpps = (struct intel_padgroup *)IOMalloc(ngpps * sizeof(struct intel_padgroup));
     
-    for (int i = 0; i < ngpps; i++){
-        if (community->gpps){
+    for (int i = 0; i < ngpps; i++) {
+        if (community->gpps) {
             gpps[i] = community->gpps[i];
         } else {
             unsigned gpp_size = community->gpp_size;
@@ -385,7 +390,7 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community){
             npins -= gpps[i].size;
         }
 
-        if (gpps[i].size > 32){
+        if (gpps[i].size > 32) {
             IOLog("%s::Invalid GPP size for pad group %d\n", getName(), i);
             return false;
         }
@@ -411,7 +416,7 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community){
     return true;
 }
 
-bool VoodooGPIO::intel_pinctrl_should_save(unsigned pin){
+bool VoodooGPIO::intel_pinctrl_should_save(unsigned pin) {
     if (!(intel_pad_owned_by_host(pin) && !intel_pad_locked(pin)))
         return false;
     
@@ -430,14 +435,14 @@ bool VoodooGPIO::intel_pinctrl_should_save(unsigned pin){
     return false;
 }
 
-void VoodooGPIO::intel_pinctrl_pm_init(){
+void VoodooGPIO::intel_pinctrl_pm_init() {
     context.pads = (struct intel_pad_context *)IOMalloc(npins * sizeof(struct intel_pad_context));
     memset(context.pads, 0, npins * sizeof(struct intel_pad_context));
     
     context.communities = (struct intel_community_context *)IOMalloc(ncommunities * sizeof(struct intel_community_context));
     memset(context.communities, 0, ncommunities * sizeof(struct intel_community_context));
     
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         UInt32 *intmask = (UInt32 *)IOMalloc(community->ngpps * sizeof(UInt32));
         
@@ -445,8 +450,8 @@ void VoodooGPIO::intel_pinctrl_pm_init(){
     }
 }
 
-void VoodooGPIO::intel_pinctrl_pm_release(){
-    for (int i = 0; i < ncommunities; i++){
+void VoodooGPIO::intel_pinctrl_pm_release() {
+    for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         IOFree(context.communities[i].intmask, community->ngpps * sizeof(UInt32));
         
@@ -460,9 +465,9 @@ void VoodooGPIO::intel_pinctrl_pm_release(){
     context.pads = NULL;
 }
 
-void VoodooGPIO::intel_pinctrl_suspend(){
+void VoodooGPIO::intel_pinctrl_suspend() {
     struct intel_pad_context *pads = context.pads;
-    for (int i = 0; i < npins; i++){
+    for (int i = 0; i < npins; i++) {
         const struct pinctrl_pin_desc *desc = &pins[i];
         IOVirtualAddress padcfg;
         uint32_t val;
@@ -481,7 +486,7 @@ void VoodooGPIO::intel_pinctrl_suspend(){
     }
     
     struct intel_community_context *communityContexts = context.communities;
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         
         IOVirtualAddress base = community->regs + community->ie_offset;
@@ -491,12 +496,12 @@ void VoodooGPIO::intel_pinctrl_suspend(){
     }
 }
 
-void VoodooGPIO::intel_gpio_irq_init(){
-    for (size_t i = 0; i < ncommunities; i++){
+void VoodooGPIO::intel_gpio_irq_init() {
+    for (size_t i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         IOVirtualAddress base = community->regs;
         
-        for (unsigned gpp = 0; gpp < community->ngpps; gpp++){
+        for (unsigned gpp = 0; gpp < community->ngpps; gpp++) {
             /* Mask and clear all interrupts */
             writel(0, base + community->ie_offset + gpp * 4);
             writel(0xffff, base + GPI_IS + gpp * 4);
@@ -504,12 +509,12 @@ void VoodooGPIO::intel_gpio_irq_init(){
     }
 }
 
-void VoodooGPIO::intel_pinctrl_resume(){
+void VoodooGPIO::intel_pinctrl_resume() {
     /* Mask all interrupts */
     intel_gpio_irq_init();
     
     struct intel_pad_context *pads = context.pads;
-    for (int i = 0; i < npins; i++){
+    for (int i = 0; i < npins; i++) {
         const struct pinctrl_pin_desc *desc = &pins[i];
         IOVirtualAddress padcfg;
         uint32_t val;
@@ -521,16 +526,12 @@ void VoodooGPIO::intel_pinctrl_resume(){
         val = readl(padcfg) & ~PADCFG0_GPIORXSTATE;
         if (val != pads[i].padcfg0) {
             writel(pads[i].padcfg0, padcfg);
-            //IOLog("%s::restored pin %u padcfg0 %#08x\n", getName()
-            //        desc->number, readl(padcfg));
         }
         
         padcfg = intel_get_padcfg(desc->number, PADCFG1);
         val = readl(padcfg);
         if (val != pads[i].padcfg1) {
             writel(pads[i].padcfg1, padcfg);
-            //IOLog("%s::restored pin %u padcfg1 %#08x\n", getName(),
-            //        desc->number, readl(padcfg));
         }
         
         padcfg = intel_get_padcfg(desc->number, PADCFG2);
@@ -538,28 +539,24 @@ void VoodooGPIO::intel_pinctrl_resume(){
             val = readl(padcfg);
             if (val != pads[i].padcfg2) {
                 writel(pads[i].padcfg2, padcfg);
-                //IOLog("%s::restored pin %u padcfg2 %#08x\n", getName(),
-                //        desc->number, readl(padcfg));
             }
         }
     }
     
     struct intel_community_context *communityContexts = context.communities;
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         
         IOVirtualAddress base = communities->regs + communities->ie_offset;
         
-        for (unsigned gpp = 0; gpp < community->ngpps; gpp++){
+        for (unsigned gpp = 0; gpp < community->ngpps; gpp++) {
             writel(communityContexts[i].intmask[gpp], base + gpp * 4);
-            //IOLog("%s::restored mask %d/%u %#08x\n", getName(), i, gpp,
-            //        readl(base + gpp * 4));
         }
     }
 }
 
-bool VoodooGPIO::start(IOService *provider){
-    if (!npins || !ngroups || !nfunctions || !ncommunities){
+bool VoodooGPIO::start(IOService *provider) {
+    if (!npins || !ngroups || !nfunctions || !ncommunities) {
         IOLog("%s::Missing Platform Data! Aborting!\n", getName());
         return false;
     }
@@ -570,7 +567,7 @@ bool VoodooGPIO::start(IOService *provider){
     PMinit();
     
     workLoop = getWorkLoop();
-    if (!workLoop){
+    if (!workLoop) {
         IOLog("%s::Failed to get workloop!\n", getName());
         stop(provider);
         return false;
@@ -578,7 +575,7 @@ bool VoodooGPIO::start(IOService *provider){
     workLoop->retain();
     
     interruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::InterruptOccurred), provider);
-    if (!interruptSource){
+    if (!interruptSource) {
         IOLog("%s::Failed to get GPIO Controller interrupt!\n", getName());
         stop(provider);
         return false;
@@ -596,7 +593,7 @@ bool VoodooGPIO::start(IOService *provider){
 
     IOLog("%s::VoodooGPIO Init!\n", getName());
     
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         IOLog("%s::VoodooGPIO Initializing Community %d\n", getName(), i);
         intel_community *community = &communities[i];
         
@@ -604,7 +601,7 @@ bool VoodooGPIO::start(IOService *provider){
         community->pad_regs = 0;
         
         community->mmap = provider->mapDeviceMemoryWithIndex(i);
-        if (!community->mmap){
+        if (!community->mmap) {
             IOLog("%s:VoodooGPIO error mapping community %d\n", getName(), i);
             continue;
         }
@@ -616,10 +613,10 @@ bool VoodooGPIO::start(IOService *provider){
          * Determine community features based on the revision if
          * not specified already.
          */
-        if (!community->features){
+        if (!community->features) {
             UInt32 rev;
             rev = (readl(regs + REVID) & REVID_MASK) >> REVID_SHIFT;
-            if (rev >= 0x94){
+            if (rev >= 0x94) {
                 community->features |= PINCTRL_FEATURE_DEBOUNCE;
                 community->features |= PINCTRL_FEATURE_1K_PD;
             }
@@ -630,12 +627,12 @@ bool VoodooGPIO::start(IOService *provider){
         
         community->pad_regs = regs + padbar;
         
-        if (!intel_pinctrl_add_padgroups(community)){
+        if (!intel_pinctrl_add_padgroups(community)) {
             IOLog("%s::Error adding padgroups to community %d\n", getName(), i);
         }
     }
     
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         size_t sz = sizeof(OSObject *) * communities[i].npins;
         communities[i].pinInterruptActionOwners = (OSObject **)IOMalloc(sz);
         memset(communities[i].pinInterruptActionOwners, 0, sz);
@@ -656,17 +653,6 @@ bool VoodooGPIO::start(IOService *provider){
     intel_pinctrl_pm_init();
     
     controllerIsAwake = true;
-    
-    //0x1B is ELAN0651 on Yoga 720
-    //demoInterruptSource = interruptForPin(0x1B, IRQ_TYPE_LEVEL_LOW, this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred));
-    
-    /*setInterruptTypeForPin(0x1B, IRQ_TYPE_LEVEL_LOW);
-     demoInterruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::TouchpadInterruptOccurred), this, 0x1B);
-     if (demoInterruptSource){
-     workLoop->addEventSource(demoInterruptSource);
-     demoInterruptSource->enable();
-     IOLog("%s::Registered Touchpad Interrupt!\n", getName());
-     }*/
     
     registerService();
     
@@ -695,23 +681,18 @@ bool VoodooGPIO::start(IOService *provider){
     return true;
 }
 
-void VoodooGPIO::stop(IOService *provider){
+void VoodooGPIO::stop(IOService *provider) {
     IOLog("%s::VoodooGPIO stop!\n", getName());
-    
-    /*if (demoInterruptSource){
-        workLoop->removeEventSource(demoInterruptSource);
-        demoInterruptSource->disable();
-    }*/
-    
+
     intel_pinctrl_pm_release();
     
-    for (int i = 0; i < ncommunities; i++){
-        if (communities[i].gpps_alloc){
+    for (int i = 0; i < ncommunities; i++) {
+        if (communities[i].gpps_alloc) {
             IOFree((void *)communities[i].gpps, communities[i].ngpps * sizeof(struct intel_padgroup));
             communities[i].gpps = NULL;
         }
         
-        for (int j = 0; j < communities[i].npins; j++){
+        for (int j = 0; j < communities[i].npins; j++) {
             communities[i].pinInterruptActionOwners[j] = NULL;
             communities[i].pinInterruptAction[j] = NULL;
             communities[i].interruptTypes[j] = 0;
@@ -723,13 +704,13 @@ void VoodooGPIO::stop(IOService *provider){
         IOFree(communities[i].pinInterruptRefcons, sizeof(void *) * communities[i].npins);
     }
     
-    if (interruptSource){
+    if (interruptSource) {
         workLoop->removeEventSource(interruptSource);
         interruptSource->disable();
         interruptSource = NULL;
     }
     
-    if (workLoop){
+    if (workLoop) {
         workLoop->release();
         workLoop = NULL;
     }
@@ -739,15 +720,15 @@ void VoodooGPIO::stop(IOService *provider){
     IOService::stop(provider);
 }
 
-IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevice){
-    if (powerState == 0){
+IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevice) {
+    if (powerState == 0) {
         controllerIsAwake = false;
         
-        for (int i = 0; i < ncommunities; i++){
+        for (int i = 0; i < ncommunities; i++) {
             struct intel_community *community = &communities[i];
-            for (int j = 0; j < community->npins; j++){
+            for (int j = 0; j < community->npins; j++) {
                 OSObject *pinInterruptOwner = community->pinInterruptActionOwners[j];
-                if (pinInterruptOwner){
+                if (pinInterruptOwner) {
                     int pin = community->pin_base + j;
                     intel_gpio_irq_mask_unmask(pin, true);
                 }
@@ -756,14 +737,14 @@ IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevi
         
         IOLog("%s::Going to Sleep!\n", getName());
     } else {
-        if (!controllerIsAwake){
+        if (!controllerIsAwake) {
             controllerIsAwake = true;
             
-            for (int i = 0; i < ncommunities; i++){
+            for (int i = 0; i < ncommunities; i++) {
                 struct intel_community *community = &communities[i];
-                for (int j = 0; j < community->npins; j++){
+                for (int j = 0; j < community->npins; j++) {
                     OSObject *pinInterruptOwner = community->pinInterruptActionOwners[j];
-                    if (pinInterruptOwner){
+                    if (pinInterruptOwner) {
                         int pin = community->pin_base + j;
                         intel_gpio_irq_set_type(pin, community->interruptTypes[j]);
                         intel_gpio_irq_enable(pin);
@@ -779,8 +760,8 @@ IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevi
     return kIOPMAckImplied;
 }
 
-void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *community){
-    for (int gpp = 0; gpp < community->ngpps; gpp++){
+void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *community) {
+    for (int gpp = 0; gpp < community->ngpps; gpp++) {
         const struct intel_padgroup *padgrp = &community->gpps[gpp];
         
         unsigned long pending, enabled;
@@ -796,20 +777,20 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
         if (padno >= community->npins)
             break;
         
-        for (int i = 0; i < 32; i++){
+        for (int i = 0; i < 32; i++) {
             bool isPin = (pending >> i) & 0x1;
-            if (isPin){
+            if (isPin) {
                 unsigned pin = padno + i;
                 
                 OSObject *owner = community->pinInterruptActionOwners[pin];
-                if (owner){
+                if (owner) {
                     IOInterruptAction handler = community->pinInterruptAction[pin];
                     void *refcon = community->pinInterruptRefcons[pin];
                     handler(owner, refcon, this, pin);
                 }
                 
                 if (community->interruptTypes[pin] & IRQ_TYPE_LEVEL_MASK)
-                    intel_gpio_irq_enable(community->pin_base + pin); //For Level interrupts, we need to clear the interrupt status or we get too many interrupts
+                    intel_gpio_irq_enable(community->pin_base + pin); // For Level interrupts, we need to clear the interrupt status or we get too many interrupts
             }
         }
     }
@@ -824,7 +805,7 @@ IOReturn VoodooGPIO::getInterruptType(int pin, int *interruptType) {
     if (hw_pin < 0)
         return kIOReturnNoInterrupt;
 
-    //XXX: Need to Lie to macOS that the interrupt is Edge or it keeps disabling and re-enabling it (which we do ourselves)
+    // XXX: Need to Lie to macOS that the interrupt is Edge or it keeps disabling and re-enabling it (which we do ourselves)
     *interruptType = kIOInterruptTypeEdge;
     return kIOReturnSuccess;
 }
@@ -915,16 +896,12 @@ IOReturn VoodooGPIO::setInterruptTypeForPin(int pin, int type) {
     return kIOReturnSuccess;
 }
 
-void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
+void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount) {
     command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooGPIO::interruptOccurredGated));
 }
 void VoodooGPIO::interruptOccurredGated() {
-    for (int i = 0; i < ncommunities; i++){
+    for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         intel_gpio_community_irq_handler(community);
     }
 }
-
-/*void VoodooGPIO::TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount){
-    IOLog("%s::Got Demo Touchpad Interrupt!\n", getName());
-}*/

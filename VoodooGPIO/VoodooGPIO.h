@@ -124,7 +124,7 @@ struct intel_community {
     IOMemoryMap *mmap;
     IOVirtualAddress regs;
     IOVirtualAddress pad_regs;
-    
+
     unsigned *interruptTypes;
     OSObject **pinInterruptActionOwners;
     IOInterruptAction *pinInterruptAction;
@@ -147,8 +147,8 @@ struct intel_pinctrl_context {
 };
 
 /* Additional features supported by the hardware */
-#define PINCTRL_FEATURE_DEBOUNCE	1
-#define PINCTRL_FEATURE_1K_PD		2
+#define PINCTRL_FEATURE_DEBOUNCE    1
+#define PINCTRL_FEATURE_1K_PD       2
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -160,27 +160,28 @@ struct intel_pinctrl_context {
  *     a single integer or an array of integers in which case mode is per
  *     pin.
  */
-#define PIN_GROUP(n, p, m)					\
-{							\
-.name = (n),					\
-.pins = (p),					\
-.npins = ARRAY_SIZE((p)),			\
-.mode = __builtin_choose_expr(			\
-__builtin_constant_p((m)), (m), 0),	\
-.modes = __builtin_choose_expr(			\
-__builtin_constant_p((m)), NULL, (m)),	\
+#define PIN_GROUP(n, p, m)                          \
+{                                                   \
+    .name = (n),                                    \
+    .pins = (p),                                    \
+    .npins = ARRAY_SIZE((p)),                       \
+    .mode = __builtin_choose_expr(                  \
+            __builtin_constant_p((m)), (m), 0),     \
+    .modes = __builtin_choose_expr(                 \
+            __builtin_constant_p((m)), NULL, (m)),  \
 }
 
-#define FUNCTION(n, g)				\
-{					\
-.name = (n),			\
-.groups = (g),			\
-.ngroups = ARRAY_SIZE((g)),	\
+#define FUNCTION(n, g)          \
+{                               \
+    .name = (n),                \
+    .groups = (g),              \
+    .ngroups = ARRAY_SIZE((g)), \
 }
 
 class VoodooGPIO : public IOService {
     OSDeclareDefaultStructors(VoodooGPIO);
-protected:
+
+ protected:
     struct pinctrl_pin_desc *pins;
     size_t npins;
     const struct intel_pingroup *groups;
@@ -189,25 +190,25 @@ protected:
     size_t nfunctions;
     struct intel_community *communities;
     size_t ncommunities;
-private:
+
+ private:
     struct intel_pinctrl_context context;
-    
+
     bool controllerIsAwake;
-    
+
     IOWorkLoop *workLoop;
     IOInterruptEventSource *interruptSource;
     IOCommandGate* command_gate;
-    //IOInterruptEventSource *demoInterruptSource;
-    
+
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
-    
+
     IOWorkLoop* getWorkLoop();
-    
+
     struct intel_community *intel_get_community(unsigned pin);
     const struct intel_padgroup *intel_community_get_padgroup(const struct intel_community *community, unsigned pin);
     IOVirtualAddress intel_get_padcfg(unsigned pin, unsigned reg);
-    
+
     bool intel_pad_owned_by_host(unsigned pin);
     bool intel_pad_acpi_mode(unsigned pin);
     bool intel_pad_locked(unsigned pin);
@@ -218,37 +219,37 @@ private:
     void intel_gpio_irq_enable(UInt32 pin);
     void intel_gpio_irq_mask_unmask(unsigned pin, bool mask);
     bool intel_gpio_irq_set_type(unsigned pin, unsigned type);
-    
+
     bool intel_pinctrl_add_padgroups(intel_community *community);
-    
+
     bool intel_pinctrl_should_save(unsigned pin);
     void intel_pinctrl_pm_init();
     void intel_pinctrl_pm_release();
     void intel_pinctrl_suspend();
     void intel_gpio_irq_init();
     void intel_pinctrl_resume();
-    
+
     void intel_gpio_community_irq_handler(struct intel_community *community);
 
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     void interruptOccurredGated();
-    
+
     void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
-    
-public:
-    virtual IOReturn getInterruptType(int pin, int *interruptType) override;
-    virtual IOReturn registerInterrupt(int pin, OSObject *target, IOInterruptAction handler, void *refcon) override;
-    virtual IOReturn unregisterInterrupt(int pin) override;
-    
-    virtual IOReturn enableInterrupt(int pin) override;
-    virtual IOReturn disableInterrupt(int pin) override;
-    
+
+ public:
+    IOReturn getInterruptType(int pin, int *interruptType) override;
+    IOReturn registerInterrupt(int pin, OSObject *target, IOInterruptAction handler, void *refcon) override;
+    IOReturn unregisterInterrupt(int pin) override;
+
+    IOReturn enableInterrupt(int pin) override;
+    IOReturn disableInterrupt(int pin) override;
+
     IOReturn setInterruptTypeForPin(int pin, int type);
-    
-    virtual bool start(IOService *provider) override;
-    virtual void stop(IOService *provider) override;
-    
-    virtual IOReturn setPowerState(unsigned long powerState, IOService *whatDevice) override;
+
+    bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
+
+    IOReturn setPowerState(unsigned long powerState, IOService *whatDevice) override;
 };
 
 #endif /* VoodooGPIO_h */

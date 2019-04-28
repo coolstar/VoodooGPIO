@@ -3,6 +3,7 @@
 //  VoodooGPIO
 //
 //  Created by Alexandre Daoud on 15/11/18.
+//  Copyright © 2018 Alexandre Daoud. All rights reserved.
 //
 
 #include "../VoodooGPIO.h"
@@ -97,7 +98,7 @@ static struct pinctrl_pin_desc cnllp_pins[] = {
     PINCTRL_PIN(49, (char *)"GSPI0_CLK_LOOPBK"),
     PINCTRL_PIN(50, (char *)"GSPI1_CLK_LOOPBK"),
     /* GPP_G */
-	PINCTRL_PIN(51, (char *)"SD3_CMD"),
+    PINCTRL_PIN(51, (char *)"SD3_CMD"),
     PINCTRL_PIN(52, (char *)"SD3_D0_SD4_RCLK_P"),
     PINCTRL_PIN(53, (char *)"SD3_D1_SD4_RCLK_N"),
     PINCTRL_PIN(54, (char *)"SD3_D2"),
@@ -392,8 +393,8 @@ static struct intel_community cnllp_communities[] = {
 
 class VoodooGPIOCannonLakeLP : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOCannonLakeLP);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOCannonLakeLP_h */
