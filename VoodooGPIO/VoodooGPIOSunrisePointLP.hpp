@@ -6,7 +6,7 @@
 //  Copyright © 2017 CoolStar. All rights reserved.
 //
 
-#include "VoodooGPIO.h"
+#include "VoodooGPIO.hpp"
 
 #ifndef VoodooGPIOSunrisePointLP_h
 #define VoodooGPIOSunrisePointLP_h

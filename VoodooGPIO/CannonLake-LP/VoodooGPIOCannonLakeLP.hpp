@@ -6,7 +6,7 @@
 //  Copyright © 2018 Alexandre Daoud. All rights reserved.
 //
 
-#include "../VoodooGPIO.h"
+#include "../VoodooGPIO.hpp"
 
 #ifndef VoodooGPIOCannonLakeLP_h
 #define VoodooGPIOCannonLakeLP_h

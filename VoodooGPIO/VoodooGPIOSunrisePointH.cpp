@@ -6,7 +6,7 @@
 //  Copyright © 2017 CoolStar. All rights reserved.
 //
 
-#include "VoodooGPIOSunrisePointH.h"
+#include "VoodooGPIOSunrisePointH.hpp"
 
 OSDefineMetaClassAndStructors(VoodooGPIOSunrisePointH, VoodooGPIO);
 
