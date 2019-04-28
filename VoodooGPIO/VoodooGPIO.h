@@ -61,16 +61,19 @@ struct intel_function {
  * @reg_num: GPI_IS register number
  * @base: Starting pin of this group
  * @size: Size of this group (maximum is 32).
+ * @gpio_base: Starting GPIO base of this group (%0 if matches with @base,
+ *             and %-1 if no GPIO mapping should be created)
  * @padown_num: PAD_OWN register number (assigned by the core driver)
  *
  * If pad groups of a community are not the same size, use this structure
  * to specify them.
  */
 struct intel_padgroup {
-    unsigned reg_num;
-    unsigned base;
-    unsigned size;
-    unsigned padown_num;
+    UInt32 reg_num;
+    UInt32 base;
+    UInt32 size;
+    SInt32 gpio_base;
+    UInt32 padown_num;
 };
 
 /**
@@ -208,8 +211,11 @@ private:
     bool intel_pad_owned_by_host(unsigned pin);
     bool intel_pad_acpi_mode(unsigned pin);
     bool intel_pad_locked(unsigned pin);
-    
-    void intel_gpio_irq_enable(unsigned pin);
+
+    SInt32 intel_gpio_to_pin(UInt32 offset,
+                          const struct intel_community **community,
+                          const struct intel_padgroup **padgrp);
+    void intel_gpio_irq_enable(UInt32 pin);
     void intel_gpio_irq_mask_unmask(unsigned pin, bool mask);
     bool intel_gpio_irq_set_type(unsigned pin, unsigned type);
     
