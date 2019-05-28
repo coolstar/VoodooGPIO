@@ -6,27 +6,27 @@
 //  Copyright © 2017 CoolStar. All rights reserved.
 //
 
-#include "VoodooGPIO.h"
+#include "VoodooGPIO.hpp"
 
 #ifndef VoodooGPIOSunrisePointH_h
 #define VoodooGPIOSunrisePointH_h
 
-#define SPT_PAD_OWN	0x020
-#define SPT_PADCFGLOCK	0x0a0
-#define SPT_HOSTSW_OWN	0x0d0
-#define SPT_GPI_IE	0x120
+#define SPT_PAD_OWN     0x020
+#define SPT_PADCFGLOCK  0x0a0
+#define SPT_HOSTSW_OWN  0x0d0
+#define SPT_GPI_IE      0x120
 
-#define SPT_COMMUNITY(b, s, e)				\
-{						\
-.barno = (b),				\
-.padown_offset = SPT_PAD_OWN,		\
-.padcfglock_offset = SPT_PADCFGLOCK,	\
-.hostown_offset = SPT_HOSTSW_OWN,	\
-.ie_offset = SPT_GPI_IE,		\
-.gpp_size = 24,				\
-.gpp_num_padown_regs = 4,		\
-.pin_base = (s),			\
-.npins = ((e) - (s) + 1),		\
+#define SPT_COMMUNITY(b, s, e)              \
+{                                           \
+    .barno = (b),                           \
+    .padown_offset = SPT_PAD_OWN,           \
+    .padcfglock_offset = SPT_PADCFGLOCK,    \
+    .hostown_offset = SPT_HOSTSW_OWN,       \
+    .ie_offset = SPT_GPI_IE,                \
+    .gpp_size = 24,                         \
+    .gpp_num_padown_regs = 4,               \
+    .pin_base = (s),                        \
+    .npins = ((e) - (s) + 1),               \
 }
 
 static struct pinctrl_pin_desc spth_pins[] = {
@@ -281,8 +281,8 @@ static struct intel_community spth_communities[] = {
 
 class VoodooGPIOSunrisePointH : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOSunrisePointH);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOSunrisePointH_h */

@@ -3,33 +3,44 @@
 //  VoodooGPIO
 //
 //  Created by Alexandre Daoud on 15/11/18.
+//  Copyright © 2018 Alexandre Daoud. All rights reserved.
 //
 
-#include "../VoodooGPIO.h"
+#include "../VoodooGPIO.hpp"
 
 #ifndef VoodooGPIOCannonLakeLP_h
 #define VoodooGPIOCannonLakeLP_h
 
-#define CNL_PAD_OWN        0x020
-#define CNL_PADCFGLOCK        0x080
-#define CNL_LP_HOSTSW_OWN    0x0b0
-#define CNL_GPI_IE        0x120
+#define CNL_PAD_OWN         0x020
+#define CNL_PADCFGLOCK      0x080
+#define CNL_LP_HOSTSW_OWN   0x0b0
+#define CNL_GPI_IE          0x120
 
-#define CNL_COMMUNITY(b, s, e, o)            \
-{                        \
-.barno = (b),                \
-.padown_offset = CNL_PAD_OWN,        \
-.padcfglock_offset = CNL_PADCFGLOCK,    \
-.hostown_offset = (o),            \
-.ie_offset = CNL_GPI_IE,        \
-.gpp_size = 24,             \
-.gpp_num_padown_regs = 4,        \
-.pin_base = (s),            \
-.npins = ((e) - (s) + 1),        \
+#define CNL_GPP(r, s, e, g)     \
+{                               \
+    .reg_num = (r),             \
+    .base = (s),                \
+    .size = ((e) - (s) + 1),    \
+    .gpio_base = (g),           \
 }
 
-#define CNLLP_COMMUNITY(b, s, e)            \
-CNL_COMMUNITY(b, s, e, CNL_LP_HOSTSW_OWN)
+#define CNL_NO_GPIO     -1
+
+#define CNL_COMMUNITY(b, s, e, o, g)        \
+{                                           \
+    .barno = (b),                           \
+    .padown_offset = CNL_PAD_OWN,           \
+    .padcfglock_offset = CNL_PADCFGLOCK,    \
+    .hostown_offset = (o),                  \
+    .ie_offset = CNL_GPI_IE,                \
+    .pin_base = (s),                        \
+    .npins = ((e) - (s) + 1),               \
+    .gpps = (g),                            \
+    .ngpps = ARRAY_SIZE(g),                 \
+}
+
+#define CNLLP_COMMUNITY(b, s, e, g)         \
+        CNL_COMMUNITY(b, s, e, CNL_LP_HOSTSW_OWN, g)
 
 /* Cannon Lake-LP */
 static struct pinctrl_pin_desc cnllp_pins[] = {
@@ -87,7 +98,7 @@ static struct pinctrl_pin_desc cnllp_pins[] = {
     PINCTRL_PIN(49, (char *)"GSPI0_CLK_LOOPBK"),
     PINCTRL_PIN(50, (char *)"GSPI1_CLK_LOOPBK"),
     /* GPP_G */
-	PINCTRL_PIN(51, (char *)"SD3_CMD"),
+    PINCTRL_PIN(51, (char *)"SD3_CMD"),
     PINCTRL_PIN(52, (char *)"SD3_D0_SD4_RCLK_P"),
     PINCTRL_PIN(53, (char *)"SD3_D1_SD4_RCLK_N"),
     PINCTRL_PIN(54, (char *)"SD3_D2"),
@@ -352,17 +363,38 @@ static struct intel_function cnllp_functions[] = {
     FUNCTION((char *)"uart2", cnllp_uart2_groups),
 };
 
-static struct intel_community cnllp_communities[] = {
-    CNLLP_COMMUNITY(0, 0, 67),
-    CNLLP_COMMUNITY(1, 68, 180),
-    CNLLP_COMMUNITY(2, 181, 243),
+static const struct intel_padgroup cnllp_community0_gpps[] = {
+    CNL_GPP(0, 0, 24, 0),               /* GPP_A */
+    CNL_GPP(1, 25, 50, 32),             /* GPP_B */
+    CNL_GPP(2, 51, 58, 64),             /* GPP_G */
+    CNL_GPP(3, 59, 67, CNL_NO_GPIO),    /* SPI */
 };
 
+static const struct intel_padgroup cnllp_community1_gpps[] = {
+    CNL_GPP(0, 68, 92, 96),             /* GPP_D */
+    CNL_GPP(1, 93, 116, 128),           /* GPP_F */
+    CNL_GPP(2, 117, 140, 160),          /* GPP_H */
+    CNL_GPP(3, 141, 172, 192),          /* vGPIO */
+    CNL_GPP(4, 173, 180, 224),          /* vGPIO */
+};
+
+static const struct intel_padgroup cnllp_community4_gpps[] = {
+    CNL_GPP(0, 181, 204, 256),          /* GPP_C */
+    CNL_GPP(1, 205, 228, 288),          /* GPP_E */
+    CNL_GPP(2, 229, 237, CNL_NO_GPIO),  /* JTAG */
+    CNL_GPP(3, 238, 243, CNL_NO_GPIO),  /* HVCMOS */
+};
+
+static struct intel_community cnllp_communities[] = {
+    CNLLP_COMMUNITY(0, 0, 67, cnllp_community0_gpps),
+    CNLLP_COMMUNITY(1, 68, 180, cnllp_community1_gpps),
+    CNLLP_COMMUNITY(2, 181, 243, cnllp_community4_gpps),
+};
 
 class VoodooGPIOCannonLakeLP : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOCannonLakeLP);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOCannonLakeLP_h */

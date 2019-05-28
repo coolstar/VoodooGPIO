@@ -3,33 +3,45 @@
 //  VoodooGPIO
 //
 //  Created by Alexandre Daoud on 15/11/18.
+//  Copyright © 2018 Alexandre Daoud. All rights reserved.
 //
 
-#include "../VoodooGPIO.h"
+#include "../VoodooGPIO.hpp"
 
 #ifndef VoodooGPIOCannonLakeH_h
 #define VoodooGPIOCannonLakeH_h
 
-#define CNL_PAD_OWN        0x020
-#define CNL_PADCFGLOCK        0x080
+#define CNL_PAD_OWN         0x020
+#define CNL_PADCFGLOCK      0x080
 #define CNL_H_HOSTSW_OWN    0x0c0
-#define CNL_GPI_IE        0x120
+#define CNL_GPI_IE          0x120
 
-#define CNL_COMMUNITY(b, s, e, o)            \
-{                        \
-.barno = (b),                \
-.padown_offset = CNL_PAD_OWN,        \
-.padcfglock_offset = CNL_PADCFGLOCK,    \
-.hostown_offset = (o),            \
-.ie_offset = CNL_GPI_IE,        \
-.gpp_size = 24,             \
-.gpp_num_padown_regs = 4,        \
-.pin_base = (s),            \
-.npins = ((e) - (s) + 1),        \
+#define CNL_GPP(r, s, e, g)     \
+{                               \
+    .reg_num = (r),             \
+    .base = (s),                \
+    .size = ((e) - (s) + 1),    \
+    .gpio_base = (g),           \
 }
 
-#define CNLH_COMMUNITY(b, s, e)            \
-CNL_COMMUNITY(b, s, e, CNL_H_HOSTSW_OWN)
+#define CNL_NO_GPIO     -1
+
+#define CNL_COMMUNITY(b, s, e, o, g)        \
+{                                           \
+    .barno = (b),                           \
+    .padown_offset = CNL_PAD_OWN,           \
+    .padcfglock_offset = CNL_PADCFGLOCK,    \
+    .hostown_offset = (o),                  \
+    .ie_offset = CNL_GPI_IE,                \
+    .pin_base = (s),                        \
+    .npins = ((e) - (s) + 1),               \
+    .gpps = (g),                            \
+    .ngpps = ARRAY_SIZE(g),                 \
+}
+
+#define CNLH_COMMUNITY(b, s, e, g)          \
+        CNL_COMMUNITY(b, s, e, CNL_H_HOSTSW_OWN, g)
+
 /* Cannon Lake-H */
 static struct pinctrl_pin_desc cnlh_pins[] = {
     /* GPP_A */
@@ -349,7 +361,6 @@ static struct pinctrl_pin_desc cnlh_pins[] = {
     PINCTRL_PIN(298, (char *)"A4WP_PRESENT"),
 };
 
-
 static unsigned int cnlh_spi0_pins[] = { 40, 41, 42, 43 };
 static unsigned int cnlh_spi1_pins[] = { 44, 45, 46, 47 };
 static unsigned int cnlh_spi2_pins[] = { 84, 85, 86, 87 };
@@ -400,17 +411,46 @@ static struct intel_function cnlh_functions[] = {
     FUNCTION((char *)"i2c3", cnlh_i2c3_groups),
 };
 
+static const struct intel_padgroup cnlh_community0_gpps[] = {
+    CNL_GPP(0, 0, 24, 0),               /* GPP_A */
+    CNL_GPP(1, 25, 50, 32),             /* GPP_B */
+};
+
+static const struct intel_padgroup cnlh_community1_gpps[] = {
+    CNL_GPP(0, 51, 74, 64),             /* GPP_C */
+    CNL_GPP(1, 75, 98, 96),             /* GPP_D */
+    CNL_GPP(2, 99, 106, 128),           /* GPP_G */
+    CNL_GPP(3, 107, 114, CNL_NO_GPIO),  /* AZA */
+    CNL_GPP(4, 115, 146, 160),          /* vGPIO_0 */
+    CNL_GPP(5, 147, 154, CNL_NO_GPIO),  /* vGPIO_1 */
+};
+
+static const struct intel_padgroup cnlh_community3_gpps[] = {
+    CNL_GPP(0, 155, 178, 192),          /* GPP_K */
+    CNL_GPP(1, 179, 202, 224),          /* GPP_H */
+    CNL_GPP(2, 203, 215, 256),          /* GPP_E */
+    CNL_GPP(3, 216, 239, 288),          /* GPP_F */
+    CNL_GPP(4, 240, 248, CNL_NO_GPIO),  /* SPI */
+};
+
+static const struct intel_padgroup cnlh_community4_gpps[] = {
+    CNL_GPP(0, 249, 259, CNL_NO_GPIO),  /* CPU */
+    CNL_GPP(1, 260, 268, CNL_NO_GPIO),  /* JTAG */
+    CNL_GPP(2, 269, 286, 320),          /* GPP_I */
+    CNL_GPP(3, 287, 298, 352),          /* GPP_J */
+};
+
 static struct intel_community cnlh_communities[] = {
-    CNLH_COMMUNITY(0, 0, 50),
-    CNLH_COMMUNITY(1, 51, 154),
-    CNLH_COMMUNITY(2, 155, 248),
-    CNLH_COMMUNITY(3, 249, 298),
+    CNLH_COMMUNITY(0, 0, 50, cnlh_community0_gpps),
+    CNLH_COMMUNITY(1, 51, 154, cnlh_community1_gpps),
+    CNLH_COMMUNITY(2, 155, 248, cnlh_community3_gpps),
+    CNLH_COMMUNITY(3, 249, 298, cnlh_community4_gpps),
 };
 
 class VoodooGPIOCannonLakeH : public VoodooGPIO {
     OSDeclareDefaultStructors(VoodooGPIOCannonLakeH);
-    
-    virtual bool start(IOService *provider) override;
+
+    bool start(IOService *provider) override;
 };
 
 #endif /* VoodooGPIOCannonLakeH_h */
