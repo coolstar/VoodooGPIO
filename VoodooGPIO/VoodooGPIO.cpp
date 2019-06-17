@@ -707,7 +707,7 @@ void VoodooGPIO::stop(IOService *provider) {
     if (interruptSource) {
         workLoop->removeEventSource(interruptSource);
         interruptSource->disable();
-        interruptSource = NULL;
+        OSSafeReleaseNULL(interruptSource);
     }
     
     if (workLoop) {
