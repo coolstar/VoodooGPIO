@@ -34,13 +34,13 @@ OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
 
 #define PADOWN_BITS         4
 #define PADOWN_SHIFT(p)     ((p) % 8 * PADOWN_BITS)
-#define PADOWN_MASK(p)      (0xf << PADOWN_SHIFT(p))
+#define PADOWN_MASK(p)      (GENMASK(3, 0) << PADOWN_SHIFT(p))
 #define PADOWN_GPP(p)       ((p) / 8)
 
 /* Offset from pad_regs */
 #define PADCFG0                     0x000
 #define PADCFG0_RXEVCFG_SHIFT       25
-#define PADCFG0_RXEVCFG_MASK        (3 << PADCFG0_RXEVCFG_SHIFT)
+#define PADCFG0_RXEVCFG_MASK        GENMASK(26, 25)
 #define PADCFG0_RXEVCFG_LEVEL       0
 #define PADCFG0_RXEVCFG_EDGE        1
 #define PADCFG0_RXEVCFG_DISABLED    2
@@ -52,7 +52,7 @@ OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
 #define PADCFG0_GPIROUTSMI          BIT(18)
 #define PADCFG0_GPIROUTNMI          BIT(17)
 #define PADCFG0_PMODE_SHIFT         10
-#define PADCFG0_PMODE_MASK          (0xf << PADCFG0_PMODE_SHIFT)
+#define PADCFG0_PMODE_MASK          GENMASK(13, 10)
 #define PADCFG0_GPIORXDIS           BIT(9)
 #define PADCFG0_GPIOTXDIS           BIT(8)
 #define PADCFG0_GPIORXSTATE         BIT(1)
@@ -61,7 +61,7 @@ OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
 #define PADCFG1                     0x004
 #define PADCFG1_TERM_UP             BIT(13)
 #define PADCFG1_TERM_SHIFT          10
-#define PADCFG1_TERM_MASK           (7 << PADCFG1_TERM_SHIFT)
+#define PADCFG1_TERM_MASK           GENMASK(12, 10)
 #define PADCFG1_TERM_20K            4
 #define PADCFG1_TERM_2K             3
 #define PADCFG1_TERM_5K             2
@@ -270,30 +270,6 @@ SInt32 VoodooGPIO::intel_gpio_to_pin(UInt32 offset,
 }
 
 /**
- * @param pin Hardware GPIO pin number to enable.
- */
-void VoodooGPIO::intel_gpio_irq_enable(UInt32 pin) {
-    const struct intel_community *community = intel_get_community(pin);
-    if (community) {
-        const struct intel_padgroup *padgrp = intel_community_get_padgroup(community, pin);
-        if (!padgrp)
-            return;
-
-        UInt32 gpp, gpp_offset;
-        UInt32 value;
-
-        gpp = padgrp->reg_num;
-        gpp_offset = padgroup_offset(padgrp, pin);
-        /* Clear interrupt status first to avoid unexpected interrupt */
-        writel(BIT(gpp_offset), community->regs + GPI_IS + gpp * 4);
-
-        value = readl(community->regs + community->ie_offset + gpp * 4);
-        value |= BIT(gpp_offset);
-        writel(value, community->regs + community->ie_offset + gpp * 4);
-    }
-}
-
-/**
  * @param pin Hardware GPIO pin number to mask.
  * @param mask Whether to mask or unmask.
  */
@@ -305,14 +281,18 @@ void VoodooGPIO::intel_gpio_irq_mask_unmask(unsigned pin, bool mask) {
             return;
 
         unsigned gpp, gpp_offset;
-        IOVirtualAddress reg;
+        IOVirtualAddress reg, is;
         UInt32 value;
 
         gpp = padgrp->reg_num;
         gpp_offset = padgroup_offset(padgrp, pin);
-        
+
         reg = community->regs + community->ie_offset + gpp * 4;
-        
+        is = community->regs + GPI_IS + gpp * 4;
+
+        /* Clear interrupt status first to avoid unexpected interrupt */
+        writel(static_cast<UInt32>(BIT(gpp_offset)), is);
+
         value = readl(reg);
         if (mask)
             value &= ~BIT(gpp_offset);
@@ -752,7 +732,7 @@ IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevi
                     if (pinInterruptOwner) {
                         int pin = community->pin_base + j;
                         intel_gpio_irq_set_type(pin, community->interruptTypes[j]);
-                        intel_gpio_irq_enable(pin);
+                        intel_gpio_irq_mask_unmask(pin, false);
                     }
                 }
             }
@@ -795,7 +775,7 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
                 }
                 
                 if (community->interruptTypes[pin] & IRQ_TYPE_LEVEL_MASK)
-                    intel_gpio_irq_enable(community->pin_base + pin); // For Level interrupts, we need to clear the interrupt status or we get too many interrupts
+                    intel_gpio_irq_mask_unmask(community->pin_base + pin, false); // For Level interrupts, we need to clear the interrupt status or we get too many interrupts
             }
         }
     }
@@ -868,7 +848,7 @@ IOReturn VoodooGPIO::enableInterrupt(int pin) {
     unsigned communityidx = hw_pin - community->pin_base;
     if (community->pinInterruptActionOwners[communityidx]) {
         intel_gpio_irq_set_type(hw_pin, community->interruptTypes[communityidx]);
-        intel_gpio_irq_enable(hw_pin);
+        intel_gpio_irq_mask_unmask(hw_pin, false);
         return kIOReturnSuccess;
     }
     return kIOReturnNoInterrupt;

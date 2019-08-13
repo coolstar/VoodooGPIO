@@ -216,7 +216,6 @@ class VoodooGPIO : public IOService {
     SInt32 intel_gpio_to_pin(UInt32 offset,
                           const struct intel_community **community,
                           const struct intel_padgroup **padgrp);
-    void intel_gpio_irq_enable(UInt32 pin);
     void intel_gpio_irq_mask_unmask(unsigned pin, bool mask);
     bool intel_gpio_irq_set_type(unsigned pin, unsigned type);
 
@@ -233,8 +232,6 @@ class VoodooGPIO : public IOService {
 
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     void interruptOccurredGated();
-
-    void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
 
  public:
     IOReturn getInterruptType(int pin, int *interruptType) override;
