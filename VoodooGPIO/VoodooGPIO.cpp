@@ -265,7 +265,7 @@ void VoodooGPIO::intel_gpio_irq_enable(UInt32 pin) {
         gpp = padgrp->reg_num;
         gpp_offset = padgroup_offset(padgrp, pin);
         /* Clear interrupt status first to avoid unexpected interrupt */
-        writel(BIT(gpp_offset), community->regs + GPI_IS + gpp * 4);
+        writel((UInt32)BIT(gpp_offset), community->regs + GPI_IS + gpp * 4);
 
         value = readl(community->regs + community->ie_offset + gpp * 4);
         value |= BIT(gpp_offset);
@@ -365,7 +365,7 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community) {
             unsigned gpp_size = community->gpp_size;
             gpps[i].reg_num = i;
             gpps[i].base = community->pin_base + i * gpp_size;
-            gpps[i].size = min(gpp_size, npins);
+            gpps[i].size = (UInt32)min(gpp_size, npins);
             gpps[i].gpio_base = 0;
             npins -= gpps[i].size;
         }
@@ -544,6 +544,8 @@ bool VoodooGPIO::start(IOService *provider) {
     if (!IOService::start(provider))
         return false;
     
+    isInterruptBusy = false;
+    
     PMinit();
     
     workLoop = getWorkLoop();
@@ -696,7 +698,7 @@ void VoodooGPIO::stop(IOService *provider) {
     }
     
     if (workLoop) {
-        workLoop->release();
+        // workLoop->release();
         workLoop = NULL;
     }
     
@@ -882,11 +884,21 @@ IOReturn VoodooGPIO::setInterruptTypeForPin(int pin, int type) {
 }
 
 void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount) {
-    command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooGPIO::interruptOccurredGated));
+    if (isInterruptBusy)
+        return;
+    isInterruptBusy = true;
+
+    IOReturn ret = command_gate->attemptAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooGPIO::interruptOccurredGated));
+    if (ret != kIOReturnSuccess) {
+        isInterruptBusy = false;
+        IOLog("%s:InterruptOccurred:Failed on attemptAction(). Error code = %X", getName(), ret);
+    }
 }
+
 void VoodooGPIO::interruptOccurredGated() {
     for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
         intel_gpio_community_irq_handler(community);
     }
+    isInterruptBusy = false;
 }

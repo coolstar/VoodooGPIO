@@ -197,8 +197,9 @@ class VoodooGPIO : public IOService {
     bool controllerIsAwake;
 
     IOWorkLoop *workLoop;
-    IOInterruptEventSource *interruptSource;
-    IOCommandGate* command_gate;
+    IOInterruptEventSource *interruptSource = NULL;
+    IOCommandGate* command_gate = NULL;
+    bool isInterruptBusy;
 
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
