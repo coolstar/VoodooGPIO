@@ -544,7 +544,7 @@ bool VoodooGPIO::start(IOService *provider) {
     if (!IOService::start(provider))
         return false;
     
-    isInterruptBusy = false;
+    isInterruptBusy = true;
     
     PMinit();
     
@@ -556,22 +556,21 @@ bool VoodooGPIO::start(IOService *provider) {
     }
     workLoop->retain();
     
-    interruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::InterruptOccurred), provider);
-    if (!interruptSource) {
-        IOLog("%s::Failed to get GPIO Controller interrupt!\n", getName());
-        stop(provider);
-        return false;
-    }
-    
-    workLoop->addEventSource(interruptSource);
-    interruptSource->enable();
-    
     command_gate = IOCommandGate::commandGate(this);
     if (!command_gate || (workLoop->addEventSource(command_gate) != kIOReturnSuccess)) {
         IOLog("%s Could not open command gate\n", getName());
         stop(provider);
         return false;
     }
+
+    interruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::InterruptOccurred), provider);
+    if (!interruptSource) {
+        IOLog("%s::Failed to get GPIO Controller interrupt!\n", getName());
+        stop(provider);
+        return false;
+    }
+    workLoop->addEventSource(interruptSource);
+    interruptSource->enable();
 
     IOLog("%s::VoodooGPIO Init!\n", getName());
     
@@ -634,6 +633,7 @@ bool VoodooGPIO::start(IOService *provider) {
     
     intel_pinctrl_pm_init();
     
+    isInterruptBusy = false;
     controllerIsAwake = true;
     
     registerService();
@@ -666,6 +666,17 @@ bool VoodooGPIO::start(IOService *provider) {
 void VoodooGPIO::stop(IOService *provider) {
     IOLog("%s::VoodooGPIO stop!\n", getName());
 
+    if (interruptSource) {
+        interruptSource->disable();
+        workLoop->removeEventSource(interruptSource);
+        OSSafeReleaseNULL(interruptSource);
+    }
+
+    if (command_gate) {
+        workLoop->removeEventSource(command_gate);
+        OSSafeReleaseNULL(command_gate);
+    }
+
     intel_pinctrl_pm_release();
     
     for (int i = 0; i < ncommunities; i++) {
@@ -684,17 +695,6 @@ void VoodooGPIO::stop(IOService *provider) {
         IOFree(communities[i].pinInterruptAction, sizeof(IOInterruptAction) * communities[i].npins);
         IOFree(communities[i].interruptTypes, sizeof(unsigned) * communities[i].npins);
         IOFree(communities[i].pinInterruptRefcons, sizeof(void *) * communities[i].npins);
-    }
-    
-    if (interruptSource) {
-        interruptSource->disable();
-        workLoop->removeEventSource(interruptSource);
-        OSSafeReleaseNULL(interruptSource);
-    }
-    
-    if (command_gate) {
-        workLoop->removeEventSource(command_gate);
-        OSSafeReleaseNULL(command_gate);
     }
     
     if (workLoop) {
@@ -806,7 +806,7 @@ IOReturn VoodooGPIO::registerInterrupt(int pin, OSObject *target, IOInterruptAct
     if (hw_pin < 0)
         return kIOReturnNoInterrupt;
 
-    IOLog("%s::Registering hardware pin %d for GPIO IRQ pin %u", getName(), hw_pin, pin);
+    IOLog("%s::Registering hardware pin %d for GPIO IRQ pin %u\n", getName(), hw_pin, pin);
 
     unsigned communityidx = hw_pin - community->pin_base;
     
@@ -891,7 +891,7 @@ void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src,
     IOReturn ret = command_gate->attemptAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooGPIO::interruptOccurredGated));
     if (ret != kIOReturnSuccess) {
         isInterruptBusy = false;
-        IOLog("%s:InterruptOccurred:Failed on attemptAction(). Error code = %X", getName(), ret);
+        IOLog("%s:InterruptOccurred:Failed on attemptAction(). Error code = %X\n", getName(), ret);
     }
 }
 
