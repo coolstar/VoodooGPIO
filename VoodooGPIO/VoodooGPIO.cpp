@@ -546,8 +546,6 @@ bool VoodooGPIO::start(IOService *provider) {
     
     isInterruptBusy = true;
     
-    PMinit();
-    
     workLoop = getWorkLoop();
     if (!workLoop) {
         IOLog("%s::Failed to get workloop!\n", getName());
@@ -656,6 +654,7 @@ bool VoodooGPIO::start(IOService *provider) {
     myPowerStates[1].outputPowerCharacter = kIOPMPowerOn;
     myPowerStates[1].inputPowerRequirement = kIOPMPowerOn;
     
+    PMinit();
     provider->joinPMtree(this);
     
     registerPowerDriver(this, myPowerStates, kMyNumberOfStates);
@@ -698,7 +697,7 @@ void VoodooGPIO::stop(IOService *provider) {
     }
     
     if (workLoop) {
-        // workLoop->release();
+        workLoop->release();
         workLoop = NULL;
     }
     
