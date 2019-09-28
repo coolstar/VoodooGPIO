@@ -120,6 +120,7 @@ struct intel_community {
     const struct intel_padgroup *gpps;
     size_t ngpps;
     bool gpps_alloc;
+    bool *isActiveCommunity;
     /* Reserved for the core driver */
     IOMemoryMap *mmap;
     IOVirtualAddress regs;
@@ -197,9 +198,10 @@ class VoodooGPIO : public IOService {
     bool controllerIsAwake;
 
     IOWorkLoop *workLoop;
-    IOInterruptEventSource *interruptSource = NULL;
-    IOCommandGate* command_gate = NULL;
+    IOInterruptEventSource *interruptSource;
+    IOCommandGate* command_gate;
     bool isInterruptBusy;
+    UInt32 nInactiveCommunities;
 
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
@@ -228,7 +230,7 @@ class VoodooGPIO : public IOService {
     void intel_gpio_irq_init();
     void intel_pinctrl_resume();
 
-    void intel_gpio_community_irq_handler(struct intel_community *community);
+    void intel_gpio_community_irq_handler(struct intel_community *community, bool *firstdelay);
 
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     void interruptOccurredGated();

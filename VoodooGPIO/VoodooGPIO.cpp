@@ -562,12 +562,11 @@ bool VoodooGPIO::start(IOService *provider) {
     }
 
     interruptSource = IOInterruptEventSource::interruptEventSource(this, OSMemberFunctionCast(IOInterruptEventAction, this, &VoodooGPIO::InterruptOccurred), provider);
-    if (!interruptSource) {
+    if (!interruptSource || (workLoop->addEventSource(interruptSource) != kIOReturnSuccess)) {
         IOLog("%s::Failed to get GPIO Controller interrupt!\n", getName());
         stop(provider);
         return false;
     }
-    workLoop->addEventSource(interruptSource);
     interruptSource->enable();
 
     IOLog("%s::VoodooGPIO Init!\n", getName());
@@ -627,7 +626,11 @@ bool VoodooGPIO::start(IOService *provider) {
         sz = sizeof(void *) * communities[i].npins;
         communities[i].pinInterruptRefcons = (void **)IOMalloc(sz);
         memset(communities[i].pinInterruptRefcons, 0, sz);
+        
+        communities[i].isActiveCommunity = (bool *)IOMalloc(1);;
+        *communities[i].isActiveCommunity = false;
     }
+    nInactiveCommunities = (UInt32)ncommunities - 1;
     
     intel_pinctrl_pm_init();
     
@@ -694,6 +697,7 @@ void VoodooGPIO::stop(IOService *provider) {
         IOFree(communities[i].pinInterruptAction, sizeof(IOInterruptAction) * communities[i].npins);
         IOFree(communities[i].interruptTypes, sizeof(unsigned) * communities[i].npins);
         IOFree(communities[i].pinInterruptRefcons, sizeof(void *) * communities[i].npins);
+        IOFree(communities[i].isActiveCommunity, 1);
     }
     
     if (workLoop) {
@@ -746,9 +750,13 @@ IOReturn VoodooGPIO::setPowerState(unsigned long powerState, IOService *whatDevi
     return kIOPMAckImplied;
 }
 
-void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *community) {
+void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *community, bool *firstdelay) {
     for (int gpp = 0; gpp < community->ngpps; gpp++) {
         const struct intel_padgroup *padgrp = &community->gpps[gpp];
+
+        unsigned padno = padgrp->base - community->pin_base;
+        if (padno >= community->npins)
+            break;
         
         unsigned long pending, enabled;
         
@@ -759,13 +767,12 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
         /* Only interrupts that are enabled */
         pending &= enabled;
         
-        unsigned padno = padgrp->base - community->pin_base;
-        if (padno >= community->npins)
-            break;
-        
-        for (int i = 0; i < 32; i++) {
-            bool isPin = (pending >> i) & 0x1;
-            if (isPin) {
+        if (pending) {
+            for (int i = 0; i < 32; i++) {
+                bool isPin = (pending >> i) & 0x1;
+                if (!isPin)
+                    continue;
+
                 unsigned pin = padno + i;
                 
                 OSObject *owner = community->pinInterruptActionOwners[pin];
@@ -773,6 +780,10 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
                     IOInterruptAction handler = community->pinInterruptAction[pin];
                     void *refcon = community->pinInterruptRefcons[pin];
                     handler(owner, refcon, this, pin);
+                    if (*firstdelay) {
+                        *firstdelay = false;
+                        IODelay(25 * nInactiveCommunities);  // Reduce CPU load. 25~30us per inactive community was reasonable.
+                    }
                 }
                 
                 if (community->interruptTypes[pin] & IRQ_TYPE_LEVEL_MASK)
@@ -815,6 +826,7 @@ IOReturn VoodooGPIO::registerInterrupt(int pin, OSObject *target, IOInterruptAct
     community->pinInterruptActionOwners[communityidx] = target;
     community->pinInterruptAction[communityidx] = handler;
     community->pinInterruptRefcons[communityidx] = refcon;
+    *community->isActiveCommunity = true;
     return kIOReturnSuccess;
 }
 
@@ -879,6 +891,8 @@ IOReturn VoodooGPIO::setInterruptTypeForPin(int pin, int type) {
 
     unsigned communityidx = hw_pin - community->pin_base;
     community->interruptTypes[communityidx] = type;
+    if (type & IRQ_TYPE_LEVEL_MASK)
+        *community->isActiveCommunity = true;
     return kIOReturnSuccess;
 }
 
@@ -895,9 +909,17 @@ void VoodooGPIO::InterruptOccurred(OSObject *owner, IOInterruptEventSource *src,
 }
 
 void VoodooGPIO::interruptOccurredGated() {
+    UInt32 inactive = 0;
+    bool firstdelay = true;
+    
     for (int i = 0; i < ncommunities; i++) {
         struct intel_community *community = &communities[i];
-        intel_gpio_community_irq_handler(community);
+        if (*community->isActiveCommunity)
+            intel_gpio_community_irq_handler(community, &firstdelay);
+        else
+            inactive++;
     }
+    
+    nInactiveCommunities = (inactive < ncommunities)? inactive : ((UInt32)ncommunities - 1);
     isInterruptBusy = false;
 }
