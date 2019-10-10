@@ -211,7 +211,8 @@ class VoodooGPIO : public IOService {
 
     bool intel_pad_owned_by_host(unsigned pin);
     bool intel_pad_acpi_mode(unsigned pin);
-    bool intel_pad_locked(unsigned pin);
+    int intel_pad_locked(unsigned pin);
+    bool intel_pad_is_unlocked(unsigned int pin);
 
     SInt32 intel_gpio_to_pin(UInt32 offset,
                           const struct intel_community **community,

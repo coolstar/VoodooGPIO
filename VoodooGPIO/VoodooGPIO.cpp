@@ -194,40 +194,64 @@ bool VoodooGPIO::intel_pad_acpi_mode(unsigned pin) {
     return !(readl(hostown) & BIT(gpp_offset));
 }
 
-bool VoodooGPIO::intel_pad_locked(unsigned pin) {
+/**
+ * enum - Locking variants of the pad configuration.
+ *
+ * @PAD_UNLOCKED:    Pad is fully controlled by the configuration registers
+ * @PAD_LOCKED:      Pad configuration registers, except TX state, are locked
+ * @PAD_LOCKED_TX:   Pad configuration TX state is locked
+ * @PAD_LOCKED_FULL: Pad configuration registers are locked completely
+ *
+ * Locking is considered as read-only mode for corresponding registers and
+ * their respective fields. That said, TX state bit is locked separately from
+ * the main locking scheme.
+ */
+enum {
+   PAD_UNLOCKED    = 0,
+   PAD_LOCKED      = 1,
+   PAD_LOCKED_TX   = 2,
+   PAD_LOCKED_FULL = PAD_LOCKED | PAD_LOCKED_TX,
+};
+
+int VoodooGPIO::intel_pad_locked(unsigned int pin) {
     const struct intel_community *community;
     const struct intel_padgroup *padgrp;
     unsigned offset, gpp_offset;
     UInt32 value;
-    
+    int ret = PAD_UNLOCKED;
+
     community = intel_get_community(pin);
     if (!community)
-        return true;
+        return PAD_LOCKED_FULL;
     if (!community->padcfglock_offset)
-        return false;
+        return PAD_UNLOCKED;
     
     padgrp = intel_community_get_padgroup(community, pin);
     if (!padgrp)
-        return true;
+        return PAD_LOCKED_FULL;
     
     gpp_offset = padgroup_offset(padgrp, pin);
     
     /*
      * If PADCFGLOCK and PADCFGLOCKTX bits are both clear for this pad,
      * the pad is considered unlocked. Any other case means that it is
-     * either fully or partially locked and we don't touch it.
+     * either fully or partially locked.
      */
-    offset = community->padcfglock_offset + padgrp->reg_num * 8;
+    offset = community->padcfglock_offset + 0 + padgrp->reg_num * 8;
     value = readl(community->regs + offset);
     if (value & BIT(gpp_offset))
-        return true;
+        ret |= PAD_LOCKED;
     
     offset = community->padcfglock_offset + 4 + padgrp->reg_num * 8;
     value = readl(community->regs + offset);
     if (value & BIT(gpp_offset))
-        return true;
+        ret |= PAD_LOCKED_TX;
     
-    return false;
+    return ret;
+}
+
+bool VoodooGPIO::intel_pad_is_unlocked(unsigned int pin) {
+   return (intel_pad_locked(pin) & PAD_LOCKED) == PAD_UNLOCKED;
 }
 
 /**
@@ -397,7 +421,7 @@ bool VoodooGPIO::intel_pinctrl_add_padgroups(intel_community *community) {
 }
 
 bool VoodooGPIO::intel_pinctrl_should_save(unsigned pin) {
-    if (!(intel_pad_owned_by_host(pin) && !intel_pad_locked(pin)))
+    if (!(intel_pad_owned_by_host(pin) && intel_pad_is_unlocked(pin)))
         return false;
     
     struct intel_community *community = intel_get_community(pin);
