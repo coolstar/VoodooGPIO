@@ -115,13 +115,13 @@ IOVirtualAddress VoodooGPIO::intel_get_padcfg(unsigned pin, unsigned reg) {
     
     community = intel_get_community(pin);
     if (!community)
-        return NULL;
+        return 0;
     
     padno = pin_to_padno(community, pin);
     nregs = (community->features & PINCTRL_FEATURE_DEBOUNCE) ? 4 : 2;
     
     if (reg == PADCFG2 && !(community->features & PINCTRL_FEATURE_DEBOUNCE))
-        return NULL;
+        return 0;
     
     return community->pad_regs + reg + padno * nregs * 4;
 }
