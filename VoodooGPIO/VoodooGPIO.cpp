@@ -766,14 +766,15 @@ void VoodooGPIO::intel_gpio_community_irq_handler(struct intel_community *commun
         
         /* Only interrupts that are enabled */
         pending &= enabled;
-        
-        if (pending) {
-            for (int i = 0; i < 32; i++) {
-                bool isPin = (pending >> i) & 0x1;
-                if (!isPin)
-                    continue;
+        if (!pending)
+            continue;
 
+        for (int i = 0; i < 32; i++) {
+            bool isPin = (pending >> i) & 0x1;
+            if (isPin) {
                 unsigned pin = padno + i;
+                if (pin >= community->npins)
+                    break;
                 
                 OSObject *owner = community->pinInterruptActionOwners[pin];
                 if (owner) {
@@ -816,7 +817,7 @@ IOReturn VoodooGPIO::registerInterrupt(int pin, OSObject *target, IOInterruptAct
     if (hw_pin < 0)
         return kIOReturnNoInterrupt;
 
-    IOLog("%s::Registering hardware pin %d for GPIO IRQ pin %u\n", getName(), hw_pin, pin);
+    IOLog("%s::Registering hardware pin 0x%02X for GPIO IRQ pin 0x%02X\n", getName(), hw_pin, pin);
 
     unsigned communityidx = hw_pin - community->pin_base;
     
