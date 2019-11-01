@@ -18,6 +18,17 @@
 #ifndef VoodooGPIO_h
 #define VoodooGPIO_h
 
+// Exists in the macOS 10.15 SDK
+#ifndef IOSafeDeleteNULL
+#define IOSafeDeleteNULL(ptr, type, count)              \
+    do {                                                \
+        if (NULL != (ptr)) {                            \
+            IODelete((ptr), type, count);               \
+            (ptr) = NULL;                               \
+        }                                               \
+    } while (0)
+#endif
+
 struct pinctrl_pin_desc {
     unsigned number;
     char *name;
@@ -117,7 +128,7 @@ struct intel_community {
     unsigned gpp_num_padown_regs;
     size_t npins;
     unsigned features;
-    const struct intel_padgroup *gpps;
+    struct intel_padgroup *gpps;
     size_t ngpps;
     bool gpps_alloc;
     /* Reserved for the core driver */
@@ -184,7 +195,7 @@ class VoodooGPIO : public IOService {
  protected:
     struct pinctrl_pin_desc *pins;
     size_t npins;
-    const struct intel_pingroup *groups;
+    struct intel_pingroup *groups;
     size_t ngroups;
     struct intel_function *functions;
     size_t nfunctions;
@@ -196,9 +207,9 @@ class VoodooGPIO : public IOService {
 
     bool controllerIsAwake;
 
-    IOWorkLoop *workLoop;
-    IOInterruptEventSource *interruptSource;
-    IOCommandGate* command_gate;
+    IOWorkLoop *workLoop = nullptr;
+    IOInterruptEventSource *interruptSource = nullptr;
+    IOCommandGate* command_gate = nullptr;
 
     UInt32 readl(IOVirtualAddress addr);
     void writel(UInt32 b, IOVirtualAddress addr);
@@ -206,17 +217,17 @@ class VoodooGPIO : public IOService {
     IOWorkLoop* getWorkLoop();
 
     struct intel_community *intel_get_community(unsigned pin);
-    const struct intel_padgroup *intel_community_get_padgroup(const struct intel_community *community, unsigned pin);
+    struct intel_padgroup *intel_community_get_padgroup(struct intel_community *community, unsigned pin);
     IOVirtualAddress intel_get_padcfg(unsigned pin, unsigned reg);
 
     bool intel_pad_owned_by_host(unsigned pin);
     bool intel_pad_acpi_mode(unsigned pin);
-    bool intel_pad_locked(unsigned pin);
+    int intel_pad_locked(unsigned pin);
+    bool intel_pad_is_unlocked(unsigned int pin);
 
     SInt32 intel_gpio_to_pin(UInt32 offset,
-                          const struct intel_community **community,
-                          const struct intel_padgroup **padgrp);
-    void intel_gpio_irq_enable(UInt32 pin);
+                             struct intel_community **community,
+                             struct intel_padgroup **padgrp);
     void intel_gpio_irq_mask_unmask(unsigned pin, bool mask);
     bool intel_gpio_irq_set_type(unsigned pin, unsigned type);
 
@@ -234,8 +245,6 @@ class VoodooGPIO : public IOService {
     void InterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
     void interruptOccurredGated();
 
-    void TouchpadInterruptOccurred(OSObject *owner, IOInterruptEventSource *src, int intCount);
-
  public:
     IOReturn getInterruptType(int pin, int *interruptType) override;
     IOReturn registerInterrupt(int pin, OSObject *target, IOInterruptAction handler, void *refcon) override;
@@ -245,6 +254,8 @@ class VoodooGPIO : public IOService {
     IOReturn disableInterrupt(int pin) override;
 
     IOReturn setInterruptTypeForPin(int pin, int type);
+
+    bool init(OSDictionary* properties) override;
 
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
