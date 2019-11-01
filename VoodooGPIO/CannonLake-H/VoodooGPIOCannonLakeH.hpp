@@ -374,7 +374,7 @@ static unsigned int cnlh_i2c1_pins[] = { 69, 70 };
 static unsigned int cnlh_i2c2_pins[] = { 88, 89 };
 static unsigned int cnlh_i2c3_pins[] = { 79, 98 };
 
-static const struct intel_pingroup cnlh_groups[] = {
+static struct intel_pingroup cnlh_groups[] = {
     PIN_GROUP((char *)"spi0_grp", cnlh_spi0_pins, 1),
     PIN_GROUP((char *)"spi1_grp", cnlh_spi1_pins, 1),
     PIN_GROUP((char *)"spi2_grp", cnlh_spi2_pins, 3),
@@ -411,12 +411,12 @@ static struct intel_function cnlh_functions[] = {
     FUNCTION((char *)"i2c3", cnlh_i2c3_groups),
 };
 
-static const struct intel_padgroup cnlh_community0_gpps[] = {
+static struct intel_padgroup cnlh_community0_gpps[] = {
     CNL_GPP(0, 0, 24, 0),               /* GPP_A */
     CNL_GPP(1, 25, 50, 32),             /* GPP_B */
 };
 
-static const struct intel_padgroup cnlh_community1_gpps[] = {
+static struct intel_padgroup cnlh_community1_gpps[] = {
     CNL_GPP(0, 51, 74, 64),             /* GPP_C */
     CNL_GPP(1, 75, 98, 96),             /* GPP_D */
     CNL_GPP(2, 99, 106, 128),           /* GPP_G */
@@ -425,7 +425,7 @@ static const struct intel_padgroup cnlh_community1_gpps[] = {
     CNL_GPP(5, 147, 154, CNL_NO_GPIO),  /* vGPIO_1 */
 };
 
-static const struct intel_padgroup cnlh_community3_gpps[] = {
+static struct intel_padgroup cnlh_community3_gpps[] = {
     CNL_GPP(0, 155, 178, 192),          /* GPP_K */
     CNL_GPP(1, 179, 202, 224),          /* GPP_H */
     CNL_GPP(2, 203, 215, 256),          /* GPP_E */
@@ -433,7 +433,7 @@ static const struct intel_padgroup cnlh_community3_gpps[] = {
     CNL_GPP(4, 240, 248, CNL_NO_GPIO),  /* SPI */
 };
 
-static const struct intel_padgroup cnlh_community4_gpps[] = {
+static struct intel_padgroup cnlh_community4_gpps[] = {
     CNL_GPP(0, 249, 259, CNL_NO_GPIO),  /* CPU */
     CNL_GPP(1, 260, 268, CNL_NO_GPIO),  /* JTAG */
     CNL_GPP(2, 269, 286, 320),          /* GPP_I */

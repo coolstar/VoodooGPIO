@@ -363,14 +363,14 @@ static struct intel_function cnllp_functions[] = {
     FUNCTION((char *)"uart2", cnllp_uart2_groups),
 };
 
-static const struct intel_padgroup cnllp_community0_gpps[] = {
+static struct intel_padgroup cnllp_community0_gpps[] = {
     CNL_GPP(0, 0, 24, 0),               /* GPP_A */
     CNL_GPP(1, 25, 50, 32),             /* GPP_B */
     CNL_GPP(2, 51, 58, 64),             /* GPP_G */
     CNL_GPP(3, 59, 67, CNL_NO_GPIO),    /* SPI */
 };
 
-static const struct intel_padgroup cnllp_community1_gpps[] = {
+static struct intel_padgroup cnllp_community1_gpps[] = {
     CNL_GPP(0, 68, 92, 96),             /* GPP_D */
     CNL_GPP(1, 93, 116, 128),           /* GPP_F */
     CNL_GPP(2, 117, 140, 160),          /* GPP_H */
@@ -378,7 +378,7 @@ static const struct intel_padgroup cnllp_community1_gpps[] = {
     CNL_GPP(4, 173, 180, 224),          /* vGPIO */
 };
 
-static const struct intel_padgroup cnllp_community4_gpps[] = {
+static struct intel_padgroup cnllp_community4_gpps[] = {
     CNL_GPP(0, 181, 204, 256),          /* GPP_C */
     CNL_GPP(1, 205, 228, 288),          /* GPP_E */
     CNL_GPP(2, 229, 237, CNL_NO_GPIO),  /* JTAG */
